@@ -203,6 +203,26 @@ mlops-env/
 # Models
 *.pkl
 *.pickle
+
+
+# Excluir datos pesados de MiBici
+data/raw/*.csv
+data/processed/*.parquet
+data/processed/*.json
+
+# Excluir carpetas y BD generadas por MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Excluir variables de entorno y credenciales
+.env
+.env.*
+
+# Excluir modelos serializados
+models/*.pkl
+models/*.joblib
+models/*.onnx
 *.joblib
 
 # Python
