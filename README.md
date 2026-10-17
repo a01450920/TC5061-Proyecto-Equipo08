@@ -6,6 +6,22 @@
 
 Proyecto colaborativo de MLOps y Machine Learning para el análisis y predicción de la demanda del sistema MiBici utilizando regresión, clasificación y clustering.
 
+## Equipo y roles
+
+| Integrante | Rol principal |
+|------------|---------------|
+| Ricardo | Data Engineer y Product Owner |
+| Iván | MLOps Engineer, GitHub y gestión del repositorio |
+| Tania | Data Scientist, modelado y MLflow |
+| Jose Antonio | Documentación, ML Canvas y arquitectura |
+
+### Responsabilidades compartidas
+
+Todos los integrantes participan en:
+- Revisión de Pull Requests
+- Validación de decisiones técnicas
+- Discusión de P1, P2 y P3
+- Elaboración del entregable final
 
 ## Flujo de trabajo Git
 
