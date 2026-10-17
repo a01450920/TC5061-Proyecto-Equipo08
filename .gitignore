@@ -193,6 +193,7 @@ cython_debug/
 # MLflow
 mlruns/
 mlartifacts/
+mlflow.db
 
 # Virtual environments
 .venv/
