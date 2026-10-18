@@ -6,7 +6,59 @@ from pathlib import Path
 import pandas as pd
 from mibici.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 
+import requests
+from pathlib import Path
 
+from mibici.config import RAW_DATA_DIR
+
+URLS_MIBICI_2026 = [
+    "https://mibici.net/site/assets/files/120163/datos_abiertos_2026_01.csv",
+    "https://mibici.net/site/assets/files/121761/datos_abiertos_2026_02.csv",
+    "https://mibici.net/site/assets/files/123236/datos_abiertos_2026_03.csv",
+    "https://mibici.net/site/assets/files/124927/datos_abiertos_2026_04.csv",
+    "https://mibici.net/site/assets/files/125943/datos_abiertos_2026_05.csv",
+]
+
+
+def descargar_datos_mibici():
+    """
+    Descarga automáticamente los datasets abiertos de MiBici
+    de enero a mayo de 2026 en data/raw.
+    """
+    RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    for url in URLS_MIBICI_2026:
+        nombre_archivo = url.split("/")[-1]
+        destino = RAW_DATA_DIR / nombre_archivo
+
+        if destino.exists():
+            print(f"Archivo ya existe: {nombre_archivo}")
+            continue
+
+        print(f"Descargando {nombre_archivo}...")
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (X11; Linux x86_64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/127.0 Safari/537.36"
+            )
+        }
+
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=120,
+        )
+        response.raise_for_status()
+
+        response.raise_for_status()
+
+        with open(destino, "wb") as f:
+            f.write(response.content)
+
+        print(f"Guardado en: {destino}")
+        
 def generar_hash_sha256(filepath: Path) -> str:
     """Calcula el hash SHA256 de un archivo para garantizar la trazabilidad."""
     hasher = hashlib.sha256()
@@ -77,6 +129,9 @@ def limpiar_y_cargar_viajes(csv_files: list[Path]) -> pd.DataFrame:
 
 def ejecutar_ingesta():
     """Ejecuta el pipeline completo de ingesta y genera el manifiesto de versión."""
+    
+    descargar_datos_mibici()
+    
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     archivos_csv = sorted(list(RAW_DATA_DIR.glob("datos_abiertos_*.csv")))
