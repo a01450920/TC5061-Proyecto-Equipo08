@@ -75,6 +75,8 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     data_hash = obtener_version_datos()
 
     # Configurar el experimento central en MLflow
+# Configurar el experimento central en MLflow usando sqlite
+    mlflow.set_tracking_uri("sqlite:///mlflow.db")
     mlflow.set_experiment("mibici-equipo08")
 
     # =========================================================================
