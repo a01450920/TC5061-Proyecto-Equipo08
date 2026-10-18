@@ -23,6 +23,81 @@ Todos los integrantes participan en:
 - Discusión de P1, P2 y P3
 - Elaboración del entregable final
 
+## Preguntas sobre MiBici
+
+### P1. Predicción de demanda
+¿Cuántos viajes se iniciarán en una estación durante un periodo futuro?
+
+Problema de ML:
+- Tipo: Regresión
+- Modelo candidato: RandomForestRegressor
+- Baseline: DummyRegressor
+
+### P2. Riesgo de desbalance
+¿Una estación presenta riesgo de quedarse sin bicicletas o sin espacios disponibles?
+
+Problema de ML:
+- Tipo: Clasificación
+- Modelo candidato: RandomForestClassifier
+- Baseline: DummyClassifier
+
+### P3. Perfiles de uso
+¿Qué grupos de estaciones presentan patrones horarios similares de utilización?
+
+Problema de ML:
+- Tipo: Clustering
+- Modelo base: KMeans
+- Métrica: Silhouette Score
+
+## Datos
+
+Fuente:
+- Datos abiertos de MiBici Guadalajara.
+
+Archivos utilizados:
+- datos_abiertos_2026_01.csv
+- datos_abiertos_2026_02.csv
+- datos_abiertos_2026_03.csv
+- datos_abiertos_2026_04.csv
+- datos_abiertos_2026_05.csv
+
+Los datos son descargados automáticamente durante la ejecución del pipeline de ingesta.
+
+## Instalación
+
+
+```bash
+python -m venv mlops-env
+source mlops-env/bin/activate
+
+pip install -r requirements.txt
+```
+
+
+## Ingesta de datos
+
+```bash
+python -m mibici.dataset
+```
+
+Este comando:
+- Descarga los datos abiertos de MiBici.
+- Procesa los archivos CSV.
+- Genera `viajes_clean.parquet`.
+- Genera `data_manifest.json`.
+
+## Ejecución de experimentos
+
+```bash
+python -m mibici.modeling.train
+```
+
+Este comando:
+- Ejecuta P1 (regresión).
+- Ejecuta P2 (clasificación).
+- Ejecuta P3 (clustering).
+- Registra métricas y artefactos en MLflow.
+
 ## Flujo de trabajo Git
 
 El equipo seguirá GitHub Flow.
@@ -50,55 +125,53 @@ Se utilizará Conventional Commits:
 
 Todo cambio debe realizarse en una rama de trabajo y fusionarse mediante Pull Request hacia `main`.
 
-## Project Organization
 
-```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
+## Organización del proyecto
+
+```text
+TC5061-Proyecto-Equipo08
 │
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
+├── data/
+│   ├── raw/                     <- Datos abiertos originales de MiBici
+│   └── processed/               <- Datos procesados y manifiestos
 │
-├── models             <- Trained and serialized models, model predictions, or model summaries
+├── docs/                        <- Documentación adicional del proyecto
 │
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
+├── mibici/                      <- Código fuente principal
+│   ├── __init__.py
+│   ├── config.py                <- Configuración global
+│   ├── dataset.py               <- Ingesta y procesamiento de datos
+│   ├── features.py              <- Generación de variables para modelado
+│   ├── plots.py                 <- Generación de visualizaciones
+│   └── modeling/
+│       ├── __init__.py
+│       ├── train.py             <- Entrenamiento y registro en MLflow
+│       └── predict.py           <- Inferencia y predicciones
 │
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         mibici and configuration for tools like black
+├── mlruns/                      <- Experimentos registrados por MLflow
 │
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+├── models/                      <- Modelos serializados (cuando aplique)
 │
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
+├── notebooks/
+│   └── P1_P2_P3_MiBici.ipynb    <- Análisis exploratorio y experimentación
 │
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
+├── references/
+│   ├── Arquitectura_Equipo8.pdf <- Arquitectura de la solución
+│   └── ml_canvas.pdf            <- ML Canvas del proyecto
 │
-├── setup.cfg          <- Configuration file for flake8
+├── reports/
+│   └── figures/                 <- Figuras generadas para análisis y reporte
 │
-└── mibici   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes mibici a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+├── tests/
+│   └── test_data.py             <- Pruebas del pipeline de datos
+│
+├── .env                         <- Variables de entorno locales
+├── .gitignore
+├── Makefile
+├── pyproject.toml
+├── requirements.txt
+├── README.md
+└── mlflow.db                    <- Base de datos local de tracking MLflow
 ```
 
 --------
