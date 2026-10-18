@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, recall_score, silhouette_score
 from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.preprocessing import StandardScaler
 
 from mibici.config import (
     FIGURES_DIR,
@@ -183,7 +184,7 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     #<----------------------------------------------------------->#
     # Entrenamiento del modelo de regresión Random Forest para P1
     print(f"P1_{run_version}: Regresión de Demanda ---")
-    model_p1 = RandomForestRegressor(n_estimators=50, random_state=RANDOM_SEED)
+    model_p1 = RandomForestRegressor(n_estimators=300, max_depth=None,min_samples_split=2,min_samples_leaf=2, random_state=RANDOM_SEED)
     model_p1.fit(X_train_p1, y_train_p1)
     preds_p1 = model_p1.predict(X_test_p1)
 
@@ -209,7 +210,10 @@ def ejecutar_experimento_base(run_version: str = "v1"):
             "train_start": TRAIN_START_DATE,
             "train_end": TRAIN_END_DATE,
             "model_type": "RandomForestRegressor",
-            "n_estimators": 50,
+            "n_estimators": 300,
+            "max_depth": None,
+            "min_samples_split":2,
+            "min_samples_leaf":2,
             "seed": RANDOM_SEED,
         },
         metrics={
@@ -321,7 +325,7 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     p3_df = preparar_features_p3_clustering(df_viajes)
     X_p3 = p3_df.drop(columns=["origen_id"])
 
-    kmeans = KMeans(n_clusters=3, random_state=RANDOM_SEED, n_init=10)
+    kmeans = KMeans(n_clusters=2, random_state=RANDOM_SEED, n_init=10)
     clusters = kmeans.fit_predict(X_p3)
 
     sil_score = silhouette_score(X_p3, clusters)
@@ -343,7 +347,7 @@ def ejecutar_experimento_base(run_version: str = "v1"):
         commit_hash=commit_hash,
         params={
             "data_hash_version": data_hash,
-            "n_clusters": 3,
+            "n_clusters": 2,
             "model_type": "KMeans",
         },
         metrics={
@@ -353,7 +357,6 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     )
 
     print(f"P3 completado | silhouette_score: {sil_score:.4f}")
-
 
 if __name__ == "__main__":
     ejecutar_experimento_base(run_version="v1")
