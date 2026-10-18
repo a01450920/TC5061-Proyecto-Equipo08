@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, recall_score, silhouette_score
+from sklearn.dummy import DummyClassifier, DummyRegressor
 
 from mibici.config import (
     FIGURES_DIR,
@@ -54,6 +55,48 @@ def obtener_version_datos() -> str:
             pass
     return "desconocido"
 
+def registrar_run_mlflow(
+    run_name: str,
+    pregunta: str,
+    commit_hash: str,
+    params: dict,
+    metrics: dict,
+    artifacts: list | None = None,
+):
+    """
+    Registra un experimento en MLflow.
+
+    Parameters
+    ----------
+    run_name : str
+        Nombre del run.
+    pregunta : str
+        P1, P2 o P3.
+    commit_hash : str
+        Hash del commit actual.
+    params : dict
+        Parámetros del modelo.
+    metrics : dict
+        Métricas calculadas.
+    artifacts : list | None
+        Lista de rutas de artefactos.
+    """
+    with mlflow.start_run(run_name=run_name):
+
+        mlflow.set_tag("equipo", "equipo08")
+        mlflow.set_tag("pregunta", pregunta)
+        mlflow.set_tag("git_commit", commit_hash)
+
+        for key, value in params.items():
+            mlflow.log_param(key, value)
+
+        for key, value in metrics.items():
+            mlflow.log_metric(key, value)
+
+        if artifacts:
+            for artifact in artifacts:
+                mlflow.log_artifact(str(artifact))
+
 
 def ejecutar_experimento_base(run_version: str = "v1"):
     """Ejecuta los modelos base de P1, P2 y P3 registrando hiperparámetros, métricas y artefactos en MLflow.
@@ -80,7 +123,7 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     # =========================================================================
     # PREGUNTA 1 (P1): REGRESIÓN DE DEMANDA FUTURA
     # =========================================================================
-    print(f"\n--- Ejecutando Run P1_{run_version}: Regresión de Demanda ---")
+    print(f"\n--- Ejecutando Run P1_{run_version} ---")
     p1_df = preparar_features_p1_demanda(df_viajes)
 
     # Partición temporal estricta (SIN DATA LEAKAGE)
@@ -97,6 +140,49 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     X_train_p1, y_train_p1 = p1_train[features_p1], p1_train["viajes_salientes"]
     X_test_p1, y_test_p1 = p1_test[features_p1], p1_test["viajes_salientes"]
 
+    
+    #<--------------------------------------------------------------->#
+    # Entrenamiento del modelo dummy con DummyRegressor como baseline
+    print(f"P1_{run_version}: Baseline - Dummy Regressor ---")
+    dummy_p1 = DummyRegressor(strategy="mean")
+    dummy_p1.fit(X_train_p1, y_train_p1)
+    preds_dummy_p1 = dummy_p1.predict(X_test_p1)
+    
+    dummy_mae = mean_absolute_error(y_test_p1, preds_dummy_p1,)
+    
+    # Generar artefacto de gráfica para Dummy
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(y_test_p1.values[:100], label="Real", alpha=0.7,)
+    ax.plot(preds_dummy_p1[:100], label="Dummy Baseline", alpha=0.7,)
+    ax.set_title("P1: Demanda Real vs Dummy Baseline")
+    ax.legend()
+    fig_path_dummy_p1 = (FIGURES_DIR / f"p1_dummy_baseline_{run_version}.png")
+    plt.savefig(fig_path_dummy_p1)
+    plt.close()
+
+    #Registrar run Dummy en MLflow
+    registrar_run_mlflow(
+        run_name=f"P1_{run_version}_DummyRegressor",
+        pregunta="P1",
+        commit_hash=commit_hash,
+        params={
+            "data_hash_version": data_hash,
+            "train_start": TRAIN_START_DATE,
+            "train_end": TRAIN_END_DATE,
+            "model_type": "DummyRegressor",
+            "strategy": "mean",
+        },
+        metrics={
+            "test_mae": dummy_mae,
+        },
+        artifacts=[fig_path_dummy_p1]
+    )
+    
+    print(f"P1 Dummy completado | test_mae: {dummy_mae:.4f}")
+    
+    #<----------------------------------------------------------->#
+    # Entrenamiento del modelo de regresión Random Forest para P1
+    print(f"P1_{run_version}: Regresión de Demanda ---")
     model_p1 = RandomForestRegressor(n_estimators=50, random_state=RANDOM_SEED)
     model_p1.fit(X_train_p1, y_train_p1)
     preds_p1 = model_p1.predict(X_test_p1)
@@ -113,29 +199,31 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     plt.savefig(fig_path_p1)
     plt.close()
 
-    with mlflow.start_run(run_name=f"P1_{run_version}_RandomForest"):
-        # Tags exigidos para organización
-        mlflow.set_tag("equipo", "equipo08")
-        mlflow.set_tag("pregunta", "P1")
-        mlflow.set_tag("git_commit", commit_hash)
+    #Registrar run en MLflow
+    registrar_run_mlflow(
+        run_name=f"P1_{run_version}_RandomForest",
+        pregunta="P1",
+        commit_hash=commit_hash,
+        params={
+            "data_hash_version": data_hash,
+            "train_start": TRAIN_START_DATE,
+            "train_end": TRAIN_END_DATE,
+            "model_type": "RandomForestRegressor",
+            "n_estimators": 50,
+            "seed": RANDOM_SEED,
+        },
+        metrics={
+            "test_mae": test_mae,
+        },
+        artifacts=[fig_path_p1],
+    )
 
-        # Parámetros (incluye versión del hash de datos)
-        mlflow.log_param("data_hash_version", data_hash)
-        mlflow.log_param("train_start", TRAIN_START_DATE)
-        mlflow.log_param("train_end", TRAIN_END_DATE)
-        mlflow.log_param("model_type", "RandomForestRegressor")
-        mlflow.log_param("n_estimators", 50)
-        mlflow.log_param("seed", RANDOM_SEED)
-
-        # Métrica explícita
-        mlflow.log_metric("test_mae", test_mae)
-        mlflow.log_artifact(fig_path_p1)
-        print(f"P1 completado | test_mae: {test_mae:.4f}")
+    print(f"P1 completado | test_mae: {test_mae:.4f}")
 
     # =========================================================================
     # PREGUNTA 2 (P2): CLASIFICACIÓN DE RIESGO
     # =========================================================================
-    print(f"\n--- Ejecutando Run P2_{run_version}: Clasificación de Riesgo ---")
+    print(f"\n--- Ejecutando Run P2_{run_version} ---")
     p2_df = preparar_features_p2_riesgo(df_viajes)
 
     p2_train = p2_df[
@@ -151,6 +239,46 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     X_train_p2, y_train_p2 = p2_train[features_p2], p2_train["target_riesgo_t1"]
     X_test_p2, y_test_p2 = p2_test[features_p2], p2_test["target_riesgo_t1"]
 
+
+    #<--------------------------------------------------------------->#
+    # Entrenamiento del modelo dummy con DummyClassifier como baseline
+    print(f"P2_{run_version}: Baseline - Dummy Classifier ---")
+    dummy_p2 = DummyClassifier(strategy="most_frequent")
+    dummy_p2.fit(X_train_p2, y_train_p2)
+    preds_dummy_p2 = dummy_p2.predict(X_test_p2)
+    dummy_recall = recall_score(y_test_p2, preds_dummy_p2, zero_division=0,)
+    
+    # Generar artefacto de gráfica para Dummy
+    fig, ax = plt.subplots(figsize=(6, 4))
+    pd.Series(preds_dummy_p2).value_counts().plot(kind="bar", ax=ax, color=["skyblue", "orange"],)
+    ax.set_title("P2: Distribución de Predicciones Dummy")
+    fig_path_dummy_p2 = (FIGURES_DIR / f"p2_dummy_baseline_{run_version}.png")
+    plt.savefig(fig_path_dummy_p2)
+    plt.close()
+
+    #Registrar run Dummy en MLflow
+    registrar_run_mlflow(
+        run_name=f"P2_{run_version}_DummyClassifier",
+        pregunta="P2",
+        commit_hash=commit_hash,
+        params={
+            "data_hash_version": data_hash,
+            "train_start": TRAIN_START_DATE,
+            "train_end": TRAIN_END_DATE,
+            "model_type": "DummyClassifier",
+            "strategy": "most_frequent",
+        },
+        metrics={
+            "test_recall": dummy_recall,
+        },
+        artifacts=[fig_path_dummy_p2]
+    )
+
+    print(f"P2 Dummy completado | test_recall: {dummy_recall:.4f}")
+
+    #<----------------------------------------------------------->#
+    # Entrenamiento del modelo de regresión Random Forest para P2
+    print(f"P2_{run_version}: Clasificación de Riesgo ---")
     model_p2 = RandomForestClassifier(n_estimators=50, random_state=RANDOM_SEED)
     model_p2.fit(X_train_p2, y_train_p2)
     preds_p2 = model_p2.predict(X_test_p2)
@@ -165,20 +293,26 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     plt.savefig(fig_path_p2)
     plt.close()
 
-    with mlflow.start_run(run_name=f"P2_{run_version}_RandomForest"):
-        mlflow.set_tag("equipo", "equipo08")
-        mlflow.set_tag("pregunta", "P2")
-        mlflow.set_tag("git_commit", commit_hash)
+    #Registrar run en MLflow
+    registrar_run_mlflow(
+        run_name=f"P2_{run_version}_RandomForest",
+        pregunta="P2",
+        commit_hash=commit_hash,
+        params={
+            "data_hash_version": data_hash,
+            "train_start": TRAIN_START_DATE,
+            "train_end": TRAIN_END_DATE,
+            "model_type": "RandomForestClassifier",
+            "n_estimators": 50,
+            "seed": RANDOM_SEED,
+        },
+        metrics={
+            "test_recall": test_recall,
+        },
+        artifacts=[fig_path_p2],
+    )
 
-        mlflow.log_param("data_hash_version", data_hash)
-        mlflow.log_param("train_start", TRAIN_START_DATE)
-        mlflow.log_param("train_end", TRAIN_END_DATE)
-        mlflow.log_param("model_type", "RandomForestClassifier")
-        mlflow.log_param("n_estimators", 50)
-
-        mlflow.log_metric("test_recall", test_recall)
-        mlflow.log_artifact(fig_path_p2)
-        print(f"P2 completado | test_recall: {test_recall:.4f}")
+    print(f"P2 completado | test_recall: {test_recall:.4f}")
 
     # =========================================================================
     # PREGUNTA 3 (P3): CLUSTERING DE PERFILES HORARIOS
@@ -202,18 +336,23 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     plt.savefig(fig_path_p3)
     plt.close()
 
-    with mlflow.start_run(run_name=f"P3_{run_version}_KMeans"):
-        mlflow.set_tag("equipo", "equipo08")
-        mlflow.set_tag("pregunta", "P3")
-        mlflow.set_tag("git_commit", commit_hash)
+    #Registrar run en MLflow
+    registrar_run_mlflow(
+        run_name=f"P3_{run_version}_KMeans",
+        pregunta="P3",
+        commit_hash=commit_hash,
+        params={
+            "data_hash_version": data_hash,
+            "n_clusters": 3,
+            "model_type": "KMeans",
+        },
+        metrics={
+            "silhouette_score": sil_score,
+        },
+        artifacts=[fig_path_p3],
+    )
 
-        mlflow.log_param("data_hash_version", data_hash)
-        mlflow.log_param("n_clusters", 3)
-        mlflow.log_param("model_type", "KMeans")
-
-        mlflow.log_metric("silhouette_score", sil_score)
-        mlflow.log_artifact(fig_path_p3)
-        print(f"P3 completado | silhouette_score: {sil_score:.4f}")
+    print(f"P3 completado | silhouette_score: {sil_score:.4f}")
 
 
 if __name__ == "__main__":
