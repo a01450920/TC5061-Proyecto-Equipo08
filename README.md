@@ -110,6 +110,8 @@ ACTUALIZACIÓN 21OCT26
 
 1. Levantar servidor local de tracking (en una Terminal 1):
    mlflow server --backend-store-uri sqlite:///mlflow.db --port 5000
+   Para enlazar las ejecuciones de mlflow run directamente con el servidor activo, configura la variable de entorno en PowerShell:
+   $env:MLFLOW_TRACKING_URI="[http://127.0.0.1:5000](http://127.0.0.1:5000)"
 
 2. Ejecutar Ingesta de datos (en una Terminal 2):
    mlflow run . -e ingest --env-manager=local
