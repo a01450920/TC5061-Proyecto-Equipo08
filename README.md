@@ -102,3 +102,22 @@ Todo cambio debe realizarse en una rama de trabajo y fusionarse mediante Pull Re
 ```
 
 --------
+ACTUALIZACIÓN 21OCT26
+
+## Reproducción del Proyecto con MLflow Project
+
+## Reproducción con MLflow Project
+
+1. Levantar servidor local de tracking (en una Terminal 1):
+   mlflow server --backend-store-uri sqlite:///mlflow.db --port 5000
+
+2. Ejecutar Ingesta de datos (en una Terminal 2):
+   mlflow run . -e ingest --env-manager=local
+
+3. Ejecutar Entrenamiento completo (P1, P2 y P3):
+   mlflow run . -e train -P question=all -P n_estimators=300 -P run_version=v1 --env-manager=local
+
+4. Ejecutar Entrenamiento por pregunta individual:
+   - P1: mlflow run . -e train -P question=p1 -P n_estimators=300 -P max_depth=12 --env-manager=local
+   - P2: mlflow run . -e train -P question=p2 -P n_estimators=100 -P max_depth=8 --env-manager=local
+   - P3: mlflow run . -e train -P question=p3 -P n_clusters=4 --env-manager=local
