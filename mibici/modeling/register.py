@@ -55,7 +55,8 @@ MODELOS = {
 def buscar(experiment_id: str, pregunta: str, stage: str, orden: str) -> pd.DataFrame:
     return mlflow.search_runs(
         experiment_ids=[experiment_id],
-        filter_string=f"tags.question = '{pregunta}' and tags.stage_of_work = '{stage}'",
+        filter_string=(f"tags.question = '{pregunta}' and tags.stage_of_work = '{stage}' "
+                       "and attributes.status = 'FINISHED'"),
         order_by=[orden],
     )
 
@@ -115,10 +116,15 @@ def exportar_tabla(experiment_id: str) -> None:
         "metrics.silhouette_score": "silhouette", "metrics.davies_bouldin": "davies_bouldin",
         "run_id": "run_id",
     }
-    df = mlflow.search_runs(
-        experiment_ids=[experiment_id],
-        filter_string="tags.stage_of_work = 'baseline' or tags.stage_of_work = 'candidate'",
-    )
+    partes = [
+        mlflow.search_runs(
+            experiment_ids=[experiment_id],
+            filter_string=f"tags.stage_of_work = '{etapa}' and attributes.status = 'FINISHED'",
+        )
+        for etapa in ("baseline", "candidate")
+    ]
+    df = pd.concat([p for p in partes if not p.empty], ignore_index=True) if any(
+        not p.empty for p in partes) else pd.DataFrame()
     if df.empty:
         return
     tabla = df.reindex(columns=list(columnas)).rename(columns=columnas).sort_values(["pregunta", "etapa"])

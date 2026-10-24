@@ -412,10 +412,14 @@ def registrar_modelo(modelo, datos: Datos, pred: np.ndarray) -> None:
     firma = infer_signature(X.head(100), pred[:100])
     ejemplo = X.head(5)
     try:
-        info = mlflow.sklearn.log_model(sk_model=modelo, name="model", signature=firma, input_example=ejemplo)
+        info = mlflow.sklearn.log_model(
+            sk_model=modelo, name="model", signature=firma, input_example=ejemplo,
+            serialization_format="cloudpickle",  # skops (default de MLflow 3.x) rechaza los árboles
+        )
     except TypeError:  # MLflow < 3 usa artifact_path
         info = mlflow.sklearn.log_model(
-            sk_model=modelo, artifact_path="model", signature=firma, input_example=ejemplo
+            sk_model=modelo, artifact_path="model", signature=firma, input_example=ejemplo,
+            serialization_format="cloudpickle",
         )
     uri = getattr(info, "model_uri", None)
     if uri:
