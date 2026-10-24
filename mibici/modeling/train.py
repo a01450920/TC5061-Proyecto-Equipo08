@@ -4,6 +4,8 @@ import json
 import git
 import matplotlib.pyplot as plt
 import mlflow
+import mlflow.data #agregado para semana 6
+from mlflow.models import infer_signature
 import pandas as pd
 import argparse #agregado para semana 6
 from sklearn.cluster import KMeans
@@ -397,6 +399,116 @@ def ejecutar_por_pregunta(
         X_train_p1, y_train_p1 = p1_train[features_p1], p1_train["viajes_salientes"]
         X_test_p1, y_test_p1 = p1_test[features_p1], p1_test["viajes_salientes"]
 
+        
+        # 1. CORRIDA PADRE (Parent Run) para la búsqueda
+        with mlflow.start_run(run_name=f"P1_Search_{model.upper()}", nested=False) as parent_run:
+            #Etiquetas obligatorias de equipo y filtrado solicitadas
+            mlflow.set_tag("equipo", "equipo08")
+            mlflow.set_tag("question", "p1")
+            mlflow.set_tag("model_family", model)
+            mlflow.set_tag("stage_of_work", "search")
+            mlflow.set_tag("git_commit", commit_hash)
+
+            #Definir el grid de hiperparámetros a probas (al menos tres variantes adicionales al baseline)
+            estimators_grid = [100, 200, n_estimators]
+            depths_grid = [None, 10, 20]
+
+            for n_est in estimators_grid:
+                for d_val in depths_grid:
+                    #2. CORRIDAS HIJAS por cada combinación
+                    with mlflow.start_run(run_name=f"p1_rf_est_{n_est}_depth_{d_val}", nested=True):
+                        mlflow.set_tag("equipo", "equipo08")
+                        mlflow.set_tag("question", "p1")
+                        mlflow.set_tag("model_family", model)
+                        mlflow.set_tag("stage_of_work", "search")
+                        mlflow.set_tag("git_commit", commit_hash)
+
+                        depth_val = None if d_val is None or d_val <= 0 else d_val
+
+                        # Entrenamiento
+                        model_p1 = RandomForestRegressor(
+                            n_estimators=n_est, 
+                            max_depth=depth_val, 
+                            min_samples_split=2, 
+                            min_samples_leaf=2, 
+                            random_state=RANDOM_SEED
+                        )
+                        model_p1.fit(X_train_p1, y_train_p1)
+                        preds_p1 = model_p1.predict(X_test_p1)
+                        test_mae = mean_absolute_error(y_test_p1, preds_p1)
+
+                        # Registrar parámetros y métricas en la corrida hija
+                        mlflow.log_param("data_hash_version", data_hash)
+                        mlflow.log_param("model_type", model)
+                        mlflow.log_param("n_estimators", n_est)
+                        mlflow.log_param("max_depth", str(depth_val))
+                        mlflow.log_param("seed", RANDOM_SEED)
+                        mlflow.log_metric("test_mae", test_mae)
+
+                        # SE AGREGAN LOS ARTEFACTOS (INCISO 5)
+                        # A. Modelo con firma (signature) y ejemplo de entrada
+                        signature = infer_signature(X_test_p1, preds_p1)
+                        input_example = X_test_p1.head(5)
+                        mlflow.sklearn.log_model(
+                            sk_model=model_p1,
+                            artifact_path="model",
+                            signature=signature,
+                            input_example=input_example
+                        )
+
+                        # B. Registro de la versión de datos con log_input
+                        train_dataset = mlflow.data.from_pandas(
+                            df=pd.concat([X_train_p1, y_train_p1], axis=1),
+                            source="viajes_clean.parquet",
+                            name="mibici_train_p1",
+                            targets="viajes_salientes"
+                        )
+                        mlflow.log_input(train_dataset, context="training")
+
+                        # C. Gráfica de desempeño organizada en subcarpeta plots/
+                        plots_dir = FIGURES_DIR / "plots"
+                        plots_dir.mkdir(parents=True, exist_ok=True)
+                        fig_path_p1 = plots_dir / f"p1_demanda_pred_est_{n_est}_depth_{d_val}.png"
+                        
+                        fig, ax = plt.subplots(figsize=(8, 4))
+                        ax.plot(y_test_p1.values[:100], label="Real", alpha=0.7)
+                        ax.plot(preds_p1[:100], label="Predicción", alpha=0.7)
+                        ax.set_title(f"P1: Real vs Pred (est={n_est}, depth={d_val})")
+                        ax.legend()
+                        plt.savefig(fig_path_p1)
+                        plt.close()
+                        
+                        mlflow.log_artifacts(str(plots_dir), artifact_path="plots")
+
+                        # D. Manifiesto de datos en subcarpeta data/
+                        manifest_path = PROCESSED_DATA_DIR / "data_manifest.json"
+                        if manifest_path.exists():
+                            mlflow.log_artifact(str(manifest_path), artifact_path="data")
+
+                        # E. Archivo de configuración en subcarpeta config/
+                        config_dir = PROCESSED_DATA_DIR.parent / "configs"
+                        config_dir.mkdir(parents=True, exist_ok=True)
+                        config_file_path = config_dir / f"config_p1_est_{n_est}_depth_{d_val}.json"
+                        
+                        config_dict = {
+                            "question": "p1",
+                            "model_type": model,
+                            "n_estimators": n_est,
+                            "max_depth": str(depth_val),
+                            "seed": RANDOM_SEED,
+                            "train_start": TRAIN_START_DATE,
+                            "train_end": TRAIN_END_DATE
+                        }
+                        with open(config_file_path, "w", encoding="utf-8") as f:
+                            json.dump(config_dict, f, indent=4)
+                            
+                        mlflow.log_artifacts(str(config_dir), artifact_path="config")
+                        # =========================================================
+
+                        print(f"Hija [n_est={n_est}, depth={depth_val}] completada | test_mae: {test_mae:.4f}")
+
+        print("Búsqueda anidada de P1 finalizada con éxito")
+        
         depth_val = None if max_depth is None or max_depth <= 0 else max_depth
         
         model_p1 = RandomForestRegressor(n_estimators=n_estimators, max_depth=depth_val, min_samples_split=2, min_samples_leaf=2, random_state=RANDOM_SEED)
@@ -440,6 +552,115 @@ def ejecutar_por_pregunta(
         X_train_p2, y_train_p2 = p2_train[features_p2], p2_train["target_riesgo_t1"]
         X_test_p2, y_test_p2 = p2_test[features_p2], p2_test["target_riesgo_t1"]
 
+        # 1. CORRIDA PADRE (Parent Run) para la búsqueda
+        with mlflow.start_run(run_name=f"P2_Search_{model.upper()}", nested=False) as parent_run:
+            #Etiquetas obligatorias de equipo y filtrado solicitadas
+            mlflow.set_tag("equipo", "equipo08")
+            mlflow.set_tag("question", "p2")
+            mlflow.set_tag("model_family", model)
+            mlflow.set_tag("stage_of_work", "search")
+            mlflow.set_tag("git_commit", commit_hash)
+        
+            #Definir el grid de hiperparámetros a probas (al menos tres variantes adicionales al baseline)
+            estimators_grid = [100, 200, n_estimators]
+            depths_grid = [None, 10, 20]
+        
+            for n_est in estimators_grid:
+                for d_val in depths_grid:
+                    #2. CORRIDAS HIJAS por cada combinación
+                    with mlflow.start_run(run_name=f"p2_rf_est_{n_est}_depth_{d_val}", nested=True):
+                        mlflow.set_tag("equipo", "equipo08")
+                        mlflow.set_tag("question", "p2")
+                        mlflow.set_tag("model_family", model)
+                        mlflow.set_tag("stage_of_work", "search")
+                        mlflow.set_tag("git_commit", commit_hash)
+        
+                        depth_val = None if d_val is None or d_val <= 0 else d_val
+        
+                        # Entrenamiento
+                        model_p2 = RandomForestRegressor(
+                            n_estimators=n_est, 
+                            max_depth=depth_val, 
+                            min_samples_split=2, 
+                            min_samples_leaf=2, 
+                            random_state=RANDOM_SEED
+                        )
+                        model_p2.fit(X_train_p2, y_train_p2)
+                        preds_p2 = model_p2.predict(X_test_p2)
+                        test_mae = mean_absolute_error(y_test_p2, preds_p2)
+        
+                        # Registrar parámetros y métricas en la corrida hija
+                        mlflow.log_param("data_hash_version", data_hash)
+                        mlflow.log_param("model_type", model)
+                        mlflow.log_param("n_estimators", n_est)
+                        mlflow.log_param("max_depth", str(depth_val))
+                        mlflow.log_param("seed", RANDOM_SEED)
+                        mlflow.log_metric("test_mae", test_mae)
+
+                        # SE AGREGAN LOS ARTEFACTOS DEL INCISO 5
+                        # A. Modelo con firma (signature) y ejemplo de entrada
+                        signature = infer_signature(X_test_p2, preds_p2)
+                        input_example = X_test_p2.head(5)
+                        mlflow.sklearn.log_model(
+                            sk_model=model_p2,
+                            artifact_path="model",
+                            signature=signature,
+                            input_example=input_example
+                        )
+
+                        # B. Registro de la versión de datos con log_input
+                        train_dataset = mlflow.data.from_pandas(
+                            df=pd.concat([X_train_p2, y_train_p2], axis=1),
+                            source="viajes_clean.parquet",
+                            name="mibici_train_p2",
+                            targets="viajes_salientes"
+                        )
+                        mlflow.log_input(train_dataset, context="training")
+
+                        # C. Gráfica de desempeño organizada en subcarpeta plots/
+                        plots_dir = FIGURES_DIR / "plots"
+                        plots_dir.mkdir(parents=True, exist_ok=True)
+                        fig_path_p2 = plots_dir / f"p2_demanda_pred_est_{n_est}_depth_{d_val}.png"
+                        
+                        fig, ax = plt.subplots(figsize=(8, 4))
+                        ax.plot(y_test_p2.values[:100], label="Real", alpha=0.7)
+                        ax.plot(preds_p2[:100], label="Predicción", alpha=0.7)
+                        ax.set_title(f"P2: Real vs Pred (est={n_est}, depth={d_val})")
+                        ax.legend()
+                        plt.savefig(fig_path_p2)
+                        plt.close()
+                        
+                        mlflow.log_artifacts(str(plots_dir), artifact_path="plots")
+
+                        # D. Manifiesto de datos en subcarpeta data/
+                        manifest_path = PROCESSED_DATA_DIR / "data_manifest.json"
+                        if manifest_path.exists():
+                            mlflow.log_artifact(str(manifest_path), artifact_path="data")
+
+                        # E. Archivo de configuración en subcarpeta config/
+                        config_dir = PROCESSED_DATA_DIR.parent / "configs"
+                        config_dir.mkdir(parents=True, exist_ok=True)
+                        config_file_path = config_dir / f"config_p2_est_{n_est}_depth_{d_val}.json"
+                        
+                        config_dict = {
+                            "question": "p2",
+                            "model_type": model,
+                            "n_estimators": n_est,
+                            "max_depth": str(depth_val),
+                            "seed": RANDOM_SEED,
+                            "train_start": TRAIN_START_DATE,
+                            "train_end": TRAIN_END_DATE
+                        }
+                        with open(config_file_path, "w", encoding="utf-8") as f:
+                            json.dump(config_dict, f, indent=4)
+                            
+                        mlflow.log_artifacts(str(config_dir), artifact_path="config")
+                        # =========================================================
+        
+                        print(f"Hija [n_est={n_est}, depth={depth_val}] completada | test_mae: {test_mae:.4f}")
+        
+        print("Búsqueda anidada de P2 finalizada con éxito")
+
         model_p2 = RandomForestClassifier(n_estimators=n_estimators, random_state=RANDOM_SEED)
         model_p2.fit(X_train_p2, y_train_p2)
         preds_p2 = model_p2.predict(X_test_p2)
@@ -472,6 +693,112 @@ def ejecutar_por_pregunta(
         print(f"\n--- Ejecutando Run P3_{run_version} ---")
         p3_df = preparar_features_p3_clustering(df_viajes)
         X_p3 = p3_df.drop(columns=["origen_id"])
+
+        # 1. CORRIDA PADRE (Parent Run) para agrupar la búsqueda de clustering
+        with mlflow.start_run(run_name=f"P3_Search_KMeans", nested=False) as parent_run:
+            # Etiquetas obligatorias y de filtrado requeridas
+            mlflow.set_tag("equipo", "equipo08")
+            mlflow.set_tag("question", "p3")
+            mlflow.set_tag("model_family", "kmeans")
+            mlflow.set_tag("stage_of_work", "search")
+            mlflow.set_tag("git_commit", commit_hash)
+
+            # Rejilla de hiperparámetros a explorar (variantes adicionales al baseline de 2 clústeres)
+            clusters_grid = [2, 3, 4, 5]
+
+            for k in clusters_grid:
+                # 2. CORRIDAS HIJAS por cada valor de K
+                with mlflow.start_run(run_name=f"p3_kmeans_clusters_{k}", nested=True):
+                    mlflow.set_tag("equipo", "equipo08")
+                    mlflow.set_tag("question", "p3")
+                    mlflow.set_tag("model_family", "kmeans")
+                    mlflow.set_tag("stage_of_work", "search")
+                    mlflow.set_tag("git_commit", commit_hash)
+
+                    # Entrenamiento de KMeans
+                    kmeans = KMeans(n_clusters=k, random_state=RANDOM_SEED, n_init=10)
+                    clusters = kmeans.fit_predict(X_p3)
+                    sil_score = silhouette_score(X_p3, clusters)
+
+                    # Generar gráfica de perfiles dinámicamente según K
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    for c in range(k):
+                        ax.plot(X_p3[clusters == c].mean(axis=0).values, label=f"Cluster {c}")
+                    ax.set_title(f"P3: Perfil Horario Promedio por Cluster (K={k})")
+                    ax.legend()
+                    fig_path_p3 = FIGURES_DIR / f"p3_cluster_profiles_{run_version}_k{k}.png"
+                    plt.savefig(fig_path_p3)
+                    plt.close()
+
+                    # Registrar parámetros y métricas en la corrida hija
+                    mlflow.log_param("data_hash_version", data_hash)
+                    mlflow.log_param("n_clusters", k)
+                    mlflow.log_param("model_type", "KMeans")
+                    mlflow.log_param("seed", RANDOM_SEED)
+                    mlflow.log_metric("silhouette_score", sil_score)
+                    
+                    # Registrar artefacto de la gráfica generada
+                    mlflow.log_artifact(str(fig_path_p3))
+
+                    # SE AGREGAN LOS ARTEFACTOS DEL INCISO 5
+                    # A. Modelo con firma (signature) y ejemplo de entrada
+                    signature = infer_signature(X_p3, clusters)
+                    input_example = X_p3.head(5)
+                    mlflow.sklearn.log_model(
+                        sk_model=kmeans,
+                        artifact_path="model",
+                        signature=signature,
+                        input_example=input_example
+                    )
+
+                    # B. Registro de la versión de datos con log_input
+                    train_dataset = mlflow.data.from_pandas(
+                        df=X_p3,
+                        source="viajes_clean.parquet",
+                        name="mibici_clustering_p3"
+                    )
+                    mlflow.log_input(train_dataset, context="training")
+
+                    # C. Gráfica de perfiles organizada en subcarpeta plots/
+                    plots_dir = FIGURES_DIR / "plots"
+                    plots_dir.mkdir(parents=True, exist_ok=True)
+                    fig_path_p3 = plots_dir / f"p3_cluster_profiles_{run_version}_k{k}.png"
+                    
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    for c in range(k):
+                        ax.plot(X_p3[clusters == c].mean(axis=0).values, label=f"Cluster {c}")
+                    ax.set_title(f"P3: Perfil Horario Promedio por Cluster (K={k})")
+                    ax.legend()
+                    plt.savefig(fig_path_p3)
+                    plt.close()
+                    
+                    mlflow.log_artifacts(str(plots_dir), artifact_path="plots")
+
+                    # D. Manifiesto de datos en subcarpeta data/
+                    manifest_path = PROCESSED_DATA_DIR / "data_manifest.json"
+                    if manifest_path.exists():
+                        mlflow.log_artifact(str(manifest_path), artifact_path="data")
+
+                    # E. Archivo de configuración en subcarpeta config/
+                    config_dir = PROCESSED_DATA_DIR.parent / "configs"
+                    config_dir.mkdir(parents=True, exist_ok=True)
+                    config_file_path = config_dir / f"config_p3_k{k}.json"
+                    
+                    config_dict = {
+                        "question": "p3",
+                        "model_type": "KMeans",
+                        "n_clusters": k,
+                        "seed": RANDOM_SEED
+                    }
+                    with open(config_file_path, "w", encoding="utf-8") as f:
+                        json.dump(config_dict, f, indent=4)
+                        
+                    mlflow.log_artifacts(str(config_dir), artifact_path="config")
+                    # =========================================================
+
+                    print(f"Hija K-Means [n_clusters={k}] completada | silhouette_score: {sil_score:.4f}")
+
+        print("Búsqueda anidada de P3 finalizada con éxito.")
 
         kmeans = KMeans(n_clusters=n_clusters, random_state=RANDOM_SEED, n_init=10)
         clusters = kmeans.fit_predict(X_p3)
