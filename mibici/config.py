@@ -3,12 +3,16 @@
 from pathlib import Path
 
 # Rutas del proyecto
+
 PROJ_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJ_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 REPORTS_DIR = PROJ_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
+MLFLOW_DB_PATH = PROJ_ROOT / "mlflow.db"
+MLFLOW_TRACKING_URI = f"sqlite:///{MLFLOW_DB_PATH.as_posix()}"
+MLFLOW_EXPERIMENT_NAME = "mibici-equipo08"
 
 # Semilla de reproducibilidad
 RANDOM_SEED = 42

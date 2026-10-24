@@ -206,3 +206,5 @@ mlops-env/
 
 # Python
 *.pyc
+
+mlflow.db

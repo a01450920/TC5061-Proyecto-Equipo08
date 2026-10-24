@@ -11,6 +11,8 @@ from sklearn.metrics import mean_absolute_error, recall_score, silhouette_score
 
 from mibici.config import (
     FIGURES_DIR,
+    MLFLOW_EXPERIMENT_NAME,
+    MLFLOW_TRACKING_URI,
     PROCESSED_DATA_DIR,
     RANDOM_SEED,
     TEST_END_DATE,
@@ -74,10 +76,9 @@ def ejecutar_experimento_base(run_version: str = "v1"):
     commit_hash = obtener_commit_hash()
     data_hash = obtener_version_datos()
 
-    # Configurar el experimento central en MLflow
-# Configurar el experimento central en MLflow usando sqlite
-    mlflow.set_tracking_uri("sqlite:///mlflow.db")
-    mlflow.set_experiment("mibici-equipo08")
+    # Configurar el experimento central en MLflow (SQLite con ruta absoluta)
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
 
     # =========================================================================
     # PREGUNTA 1 (P1): REGRESIÓN DE DEMANDA FUTURA
