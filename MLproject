@@ -1,0 +1,20 @@
+name: mibici-mlops
+
+python_env: python_env.yaml
+
+entry_points:
+  ingest:
+    command: "python -m mibici.dataset"
+
+  train:
+    parameters:
+      question: {type: string, default: "p1"}
+      mode: {type: string, default: "search"}
+      model: {type: string, default: "all"}
+      n_estimators: {type: int, default: 300}
+      max_depth: {type: int, default: -1}
+      n_clusters: {type: int, default: 2}
+    command: "python -m mibici.modeling.train --question {question} --mode {mode} --model {model} --n_estimators {n_estimators} --max_depth {max_depth} --n_clusters {n_clusters}"
+
+  register:
+    command: "python -m mibici.modeling.register"

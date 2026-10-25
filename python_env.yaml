@@ -1,0 +1,7 @@
+
+# Los wheels de tu requirements actual son cp313, por eso 3.13.
+python: "3.13.9"
+build_dependencies:
+  - pip
+dependencies:
+  - -r requirements.txt

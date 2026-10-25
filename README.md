@@ -175,3 +175,99 @@ TC5061-Proyecto-Equipo08
 ```
 
 --------
+ACTUALIZACIÓN 24OCT26
+
+## Reproducción con MLflow Project
+
+Todas las corridas se lanzan con `mlflow run`, nunca desde un notebook.
+Los comandos son para PowerShell, desde la raíz del repositorio.
+
+### 1. Entorno
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+`python_env.yaml` y `requirements.txt` (versiones fijas) declaran el entorno del proyecto.
+En Windows, `mlflow run` no puede crear ese entorno aislado porque necesita `pyenv`, que no
+existe en ese sistema, por eso los comandos usan `--env-manager=local` (el Python del
+`.venv` activo). En Linux/macOS se puede omitir esa opción.
+
+### 2. Servidor de tracking (Terminal 1)
+
+```powershell
+mlflow server --backend-store-uri sqlite:///mlflow.db --port 5000
+```
+
+La interfaz queda en http://127.0.0.1:5000. `mlflow.db` y `mlartifacts/` están en el
+`.gitignore` y nunca se suben al repositorio.
+
+### 3. Ingesta y entrenamiento (Terminal 2)
+
+```powershell
+$env:MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
+
+# Ingesta (descarga, limpia y genera viajes_clean.parquet + data_manifest.json)
+mlflow run . -e ingest --experiment-name mibici-equipo08 --env-manager=local
+
+# Baselines (DummyRegressor, DummyClassifier y KMeans k=2)
+mlflow run . -e train --experiment-name mibici-equipo08 --env-manager=local -P question=p1 -P mode=baseline
+mlflow run . -e train --experiment-name mibici-equipo08 --env-manager=local -P question=p2 -P mode=baseline
+mlflow run . -e train --experiment-name mibici-equipo08 --env-manager=local -P question=p3 -P mode=baseline
+
+# Búsqueda con nested runs: un padre por pregunta, una hija por combinación,
+# y las 3 mejores se reentrenan como candidatas con artefactos completos
+mlflow run . -e train --experiment-name mibici-equipo08 --env-manager=local -P question=p1 -P mode=search
+mlflow run . -e train --experiment-name mibici-equipo08 --env-manager=local -P question=p2 -P mode=search
+mlflow run . -e train --experiment-name mibici-equipo08 --env-manager=local -P question=p3 -P mode=search
+
+# Reproducir una configuración concreta (el modelo elegido de cada pregunta)
+mlflow run . -e train --experiment-name mibici-equipo08 --env-manager=local -P question=p1 -P mode=single -P model=rf -P n_estimators=300
+```
+
+Parámetros de `train`: `question` (p1|p2|p3), `mode` (baseline|search|single),
+`model` (rf|hgb|logreg|all), `n_estimators`, `max_depth` (-1 = sin límite) y `n_clusters`.
+Rutas, fechas y semilla viven en `mibici/config.py`.
+
+### 4. Etiquetas para filtrar en la interfaz
+
+Cada corrida lleva `equipo`, `question`, `model_family`, `stage_of_work`
+(`baseline`, `search` o `candidate`), `run_role` (`parent` o `child`) y `git_commit`.
+Ejemplo de filtro: `tags.question = "p2" and tags.stage_of_work = "candidate"`.
+
+### 5. Artefactos de cada corrida candidata
+
+| Carpeta | Contenido |
+|---|---|
+| `model/` | Modelo con firma y ejemplo de entrada |
+| `plots/` | P1: real vs predicho y residuales. P2: matriz de confusión y curva precisión-recall. P3: perfiles horarios por grupo |
+| `data/` | `data_manifest.json` (versión de los datos); P3 también `estaciones_cluster.csv` |
+| `config/` | `run_config.json` y `config.py` con los que se ejecutó |
+
+Además se registra el dataset de entrenamiento con `mlflow.log_input`. No se guardan
+datos personales de las personas usuarias (solo estaciones, horas y conteos).
+
+### 6. Model Registry y ciclo de vida
+
+```powershell
+mlflow run . -e register --experiment-name mibici-equipo08 --env-manager=local
+```
+
+Registra la mejor candidata de cada pregunta (elegida con la métrica de **validación**,
+no la de prueba) como `mibici-equipo08-p1-demanda`, `mibici-equipo08-p2-riesgo` y
+`mibici-equipo08-p3-grupos`, con descripción y linaje (corrida de origen, commit y
+versión de datos) en los tags de cada versión.
+
+**Esquema: aliases.** `champion` marca la versión en producción y, opcionalmente,
+`challenger` la siguiente mejor. Se eligen aliases porque las etapas (Staging/Production)
+están en desuso desde MLflow 2.9, y un alias permite cambiar de versión sin modificar el
+código que consume el modelo: `models:/mibici-equipo08-p1-demanda@champion`.
+
+```python
+import mlflow
+modelo = mlflow.pyfunc.load_model("models:/mibici-equipo08-p1-demanda@champion")
+```
+
+El script también genera `reports/tabla_comparativa.csv` para el reporte.
