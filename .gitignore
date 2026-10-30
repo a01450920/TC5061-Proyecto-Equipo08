@@ -218,6 +218,7 @@ mlflow.db
 # Excluir variables de entorno y credenciales
 .env
 .env.*
+!.env.example
 
 # Excluir modelos serializados
 models/*.pkl
