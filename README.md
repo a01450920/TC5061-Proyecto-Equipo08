@@ -160,18 +160,26 @@ TC5061-Proyecto-Equipo08
 │   └── ml_canvas.pdf            <- ML Canvas del proyecto
 │
 ├── reports/
-│   └── figures/                 <- Figuras generadas para análisis y reporte
-│
+│   ├── figures/                 <- Figuras de análisis y evidencias de ejecución
+│   │   ├── pytest_execution.png
+│   │   ├── bandit_execution.png
+│   │   └── pip_audit_execution.png
+│   ├── security/
+│   │   ├── bandit_report.txt    <- Reporte de análisis estático de seguridad con Bandit
+│   │   └── pip_audit_report.txt <- Reporte de auditoría de dependencias con pip-audit
+│   └── testing/
+│       └── pytest_report.txt    <- Reporte de ejecución de pruebas unitarias con PyTest
 ├── tests/
-│   └── test_data.py             <- Pruebas del pipeline de datos
+│   └── test_data.py             <- Pruebas unitarias y reproducibilidad
 │
-├── .env                         <- Variables de entorno locales
+├── .env                         <- Archivo local (excluido mediante .gitignore)
+├── .env.example                 <- Plantilla pública de variables de entorno
 ├── .gitignore
 ├── Makefile
 ├── pyproject.toml
 ├── requirements.txt
 ├── README.md
-└── mlflow.db                    <- Base de datos local de tracking MLflow
+└── mlflow.db                    <- Base de datos local de tracking (excluida mediante .gitignore)
 ```
 
 --------
@@ -271,3 +279,186 @@ modelo = mlflow.pyfunc.load_model("models:/mibici-equipo08-p1-demanda@champion")
 ```
 
 El script también genera `reports/tabla_comparativa.csv` para el reporte.
+
+## 7. Pruebas unitarias con PyTest
+
+Las pruebas automatizadas se encuentran en la carpeta `tests/`.
+
+Para ejecutarlas:
+
+```bash
+pytest tests/test_data.py -v
+```
+
+El conjunto de pruebas finalizó sin errores, obteniéndose:
+
+```text
+collected 9 items
+
+tests/test_data.py::test_preparar_features_p1_demanda_caso_normal PASSED
+tests/test_data.py::test_preparar_features_p1_demanda_edge_case_vacio PASSED
+tests/test_data.py::test_preparar_features_p2_riesgo_caso_normal PASSED
+tests/test_data.py::test_preparar_features_p2_riesgo_edge_case_vacio PASSED
+tests/test_data.py::test_preparar_features_p3_clustering_caso_normal PASSED
+tests/test_data.py::test_preparar_features_p3_clustering_edge_case_vacio PASSED
+tests/test_data.py::test_reproducibilidad_entrenamiento_p1_rf PASSED
+tests/test_data.py::test_reproducibilidad_entrenamiento_p2_logreg PASSED
+tests/test_data.py::test_reproducibilidad_entrenamiento_p3_kmeans PASSED
+
+======================== 9 passed ========================
+```
+
+El reporte completo se encuentra en:
+
+```text
+reports/testing/pytest_report.txt
+```
+
+Evidencia visual
+
+```text
+reports/figures/pytest_execution.png
+```
+
+## 8. Chequeos de seguridad
+
+### Protección de archivos sensibles
+
+El repositorio utiliza `.gitignore` para evitar la publicación accidental de archivos sensibles, artefactos temporales y recursos locales.
+
+Elementos excluidos:
+
+- `.env`
+- `mlflow.db`
+- `mlruns/`
+- `mlartifacts/`
+- `.venv/`
+- `__pycache__/`
+
+Revisión:
+```bash
+# Verificación de reglas de exclusión en .gitignore
+grep -E "^(\.env|mlflow\.db|mlruns/|mlartifacts/|\.venv/|__pycache__)" .gitignore
+# Respuesta:
+__pycache__/
+.env
+mlruns/
+mlartifacts/
+mlflow.db
+.venv/
+mlruns/
+mlartifacts/
+mlflow.db
+.env
+.env.*
+mlflow.db
+```
+
+
+Se verificó además que Git no rastrea archivos sensibles ni artefactos locales. Para ello se ejecutaron los siguientes comandos:
+
+```bash
+git ls-files .env
+git ls-files mlflow.db
+git ls-files | grep "^mlruns/"
+```
+
+Los comandos no devolvieron resultados, confirmando que dichos recursos no forman parte del repositorio versionado.
+
+### Variables de entorno y configuración
+
+Se revisó la gestión de configuración del proyecto en `mibici/config.py`.
+
+Se identificó el uso de variables de entorno mediante `os.getenv()` para la configuración de MLflow:
+
+```python
+MLFLOW_TRACKING_URI = os.getenv(
+    "MLFLOW_TRACKING_URI",
+    "http://127.0.0.1:5000"
+)
+
+MLFLOW_EXPERIMENT_NAME = os.getenv(
+    "MLFLOW_EXPERIMENT_NAME",
+    "mibici-equipo08"
+)
+```
+Se incluye un archivo .env.example que documenta las variables de entorno utilizadas por la configuración de MLflow. Contenido:
+
+```text
+MLFLOW_TRACKING_URI=http://127.0.0.1:5000
+MLFLOW_EXPERIMENT_NAME=mibici-equipo08
+```
+
+El archivo .env local permanece excluido mediante .gitignore para evitar la publicación accidental de configuraciones específicas de cada entorno.
+
+### Análisis estático de seguridad con Bandit
+
+Se ejecutó un análisis estático del código fuente utilizando Bandit:
+
+```bash
+bandit -r mibici/
+```
+El reporte completo se encuentra en:
+
+```text
+reports/security/bandit_report.txt
+```
+
+Evidencia visual:
+
+```text
+reports/figures/bandit_execution.png
+```
+
+**Resultado resumido:**
+
+Total lines of code: 885
+
+- Low severity issues: 1
+- Medium severity issues: 0
+- High severity issues: 0
+
+
+El análisis identificó una observación de severidad baja asociada al uso de:
+
+```python
+except Exception:
+    pass
+```
+en mibici/modeling/train.py.
+
+No se detectaron vulnerabilidades de severidad media o alta.
+
+
+### Auditoría de dependencias con pip-audit
+
+Se ejecutó la revisión de dependencias:
+
+```bash
+pip-audit -r requirements.txt
+```
+
+Reporte completo:
+
+```text
+reports/security/pip_audit_report.txt
+```
+
+Evidencia visual:
+
+```text
+reports/figures/pip_audit_execution.png
+```
+
+**Resultado resumido:**
+
+53 vulnerabilidades conocidas detectadas en 4 dependencias.
+
+Dependencias reportadas:
+
+* GitPython 3.1.45
+* MLflow 3.16.1
+* PyArrow 21.0.0
+* Requests 2.32.5
+
+La herramienta identificó versiones corregidas para cada dependencia reportada. Esta información puede utilizarse para evaluar futuras actualizaciones del entorno del proyecto.

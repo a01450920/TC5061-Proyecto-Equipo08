@@ -1,0 +1,47 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.4, pytest-9.1.1, pluggy-1.7.0 -- /home/ivan/mlops-env/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/ivan/mlops-tareas/MiBici/TC5061-Proyecto-Equipo08
+configfile: pyproject.toml
+plugins: platformdirs-4.12.2, anyio-4.15.1
+collecting ... collected 9 items
+
+tests/test_data.py::test_preparar_features_p1_demanda_caso_normal PASSED [ 11%]
+tests/test_data.py::test_preparar_features_p1_demanda_edge_case_vacio PASSED [ 22%]
+tests/test_data.py::test_preparar_features_p2_riesgo_caso_normal PASSED  [ 33%]
+tests/test_data.py::test_preparar_features_p2_riesgo_edge_case_vacio PASSED [ 44%]
+tests/test_data.py::test_preparar_features_p3_clustering_caso_normal PASSED [ 55%]
+tests/test_data.py::test_preparar_features_p3_clustering_edge_case_vacio PASSED [ 66%]
+tests/test_data.py::test_reproducibilidad_entrenamiento_p1_rf PASSED     [ 77%]
+tests/test_data.py::test_reproducibilidad_entrenamiento_p2_logreg PASSED [ 88%]
+tests/test_data.py::test_reproducibilidad_entrenamiento_p3_kmeans PASSED [100%]
+
+=============================== warnings summary ===============================
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:64
+  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
+  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
+  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../mlops-env/lib/python3.14/site-packages/matplotlib/_mathtext.py:45
+  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 9 passed, 14 warnings in 4.58s ========================
