@@ -120,8 +120,8 @@ def obtener_version_datos() -> str:
         try:
             with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
                 return json.load(f).get("hash_sha256", "desconocido")[:12]
-        except Exception:
-            pass
+        except (OSError, ValueError, AttributeError, TypeError) as e:  # ilegible o formato inesperado
+            print(f"AVISO: no se pudo leer {MANIFEST_PATH.name}: {e}")
     return "desconocido"
 
 
