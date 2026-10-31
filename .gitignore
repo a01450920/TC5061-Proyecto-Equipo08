@@ -230,3 +230,10 @@ models/*.onnx
 *.pyc
 
 mlflow.db
+
+# Llaves privadas, certificados y credenciales adicionales
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.yaml
