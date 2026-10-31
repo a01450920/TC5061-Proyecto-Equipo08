@@ -4,3 +4,5 @@ deepchecks==0.19.1
 setuptools==69.5.1
 bandit==1.9.4
 pip-audit==2.10.1
+anywidget==0.11.0
+plotly==7.1.0
