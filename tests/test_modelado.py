@@ -193,6 +193,30 @@ def test_falta_el_parquet_da_mensaje_claro(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# obtener_version_datos: versión de los datos a partir del manifiesto
+# ---------------------------------------------------------------------------
+def test_version_datos_toma_los_primeros_12_caracteres(monkeypatch, tmp_path):
+    manifiesto = tmp_path / "data_manifest.json"
+    manifiesto.write_text('{"hash_sha256": "abcdef0123456789abcdef"}', encoding="utf-8")
+    monkeypatch.setattr(train, "MANIFEST_PATH", manifiesto)
+    assert train.obtener_version_datos() == "abcdef012345"
+
+
+def test_version_datos_sin_manifiesto(monkeypatch, tmp_path):
+    monkeypatch.setattr(train, "MANIFEST_PATH", tmp_path / "no_existe.json")
+    assert train.obtener_version_datos() == "desconocido"
+
+
+@pytest.mark.parametrize("contenido", ["esto no es json", "[]", '{"hash_sha256": 123}', ""])
+def test_version_datos_con_manifiesto_danado_no_rompe_el_entrenamiento(monkeypatch, tmp_path, contenido):
+    """Caso límite: un manifiesto corrupto debe dar 'desconocido', no una excepción."""
+    manifiesto = tmp_path / "data_manifest.json"
+    manifiesto.write_text(contenido, encoding="utf-8")
+    monkeypatch.setattr(train, "MANIFEST_PATH", manifiesto)
+    assert train.obtener_version_datos() == "desconocido"
+
+
+# ---------------------------------------------------------------------------
 # register.py: nombres del registro y cálculo de mejora
 # ---------------------------------------------------------------------------
 def test_nombres_del_model_registry():
