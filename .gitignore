@@ -237,3 +237,4 @@ mlflow.db
 *.crt
 credentials.json
 secrets.yaml
+reports/testing/generated/
