@@ -1,47 +1,138 @@
-============================= test session starts ==============================
-platform linux -- Python 3.14.4, pytest-9.1.1, pluggy-1.7.0 -- /home/ivan/mlops-env/bin/python3
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.9, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Scripts\python.exe
 cachedir: .pytest_cache
-rootdir: /home/ivan/mlops-tareas/MiBici/TC5061-Proyecto-Equipo08
+rootdir: C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08
 configfile: pyproject.toml
-plugins: platformdirs-4.12.2, anyio-4.15.1
-collecting ... collected 9 items
+plugins: anyio-4.15.1, platformdirs-4.14.2
+collecting ... collected 76 items
 
-tests/test_data.py::test_preparar_features_p1_demanda_caso_normal PASSED [ 11%]
-tests/test_data.py::test_preparar_features_p1_demanda_edge_case_vacio PASSED [ 22%]
-tests/test_data.py::test_preparar_features_p2_riesgo_caso_normal PASSED  [ 33%]
-tests/test_data.py::test_preparar_features_p2_riesgo_edge_case_vacio PASSED [ 44%]
-tests/test_data.py::test_preparar_features_p3_clustering_caso_normal PASSED [ 55%]
-tests/test_data.py::test_preparar_features_p3_clustering_edge_case_vacio PASSED [ 66%]
-tests/test_data.py::test_reproducibilidad_entrenamiento_p1_rf PASSED     [ 77%]
-tests/test_data.py::test_reproducibilidad_entrenamiento_p2_logreg PASSED [ 88%]
-tests/test_data.py::test_reproducibilidad_entrenamiento_p3_kmeans PASSED [100%]
+tests/test_data.py::test_preparar_features_p1_demanda_caso_normal PASSED [  1%]
+tests/test_data.py::test_preparar_features_p1_demanda_edge_case_vacio PASSED [  2%]
+tests/test_data.py::test_preparar_features_p2_riesgo_caso_normal PASSED  [  3%]
+tests/test_data.py::test_preparar_features_p2_riesgo_edge_case_vacio PASSED [  5%]
+tests/test_data.py::test_preparar_features_p3_clustering_caso_normal PASSED [  6%]
+tests/test_data.py::test_preparar_features_p3_clustering_edge_case_vacio PASSED [  7%]
+tests/test_data.py::test_reproducibilidad_entrenamiento_p1_rf PASSED     [  9%]
+tests/test_data.py::test_reproducibilidad_entrenamiento_p2_logreg PASSED [ 10%]
+tests/test_data.py::test_reproducibilidad_entrenamiento_p3_kmeans PASSED [ 11%]
+tests/test_data_validation.py::test_tabla_p1_cumple_las_reglas_de_integridad PASSED [ 13%]
+tests/test_data_validation.py::test_train_y_test_no_se_traslapan_en_el_tiempo PASSED [ 14%]
+tests/test_data_validation.py::test_una_tabla_valida_no_tiene_problemas PASSED [ 15%]
+tests/test_data_validation.py::test_la_validacion_detecta_problemas[_con_nulo-faltantes] PASSED [ 17%]
+tests/test_data_validation.py::test_la_validacion_detecta_problemas[_con_llave_duplicada-duplicadas] PASSED [ 18%]
+tests/test_data_validation.py::test_la_validacion_detecta_problemas[_con_hora_imposible-horas] PASSED [ 19%]
+tests/test_data_validation.py::test_la_validacion_detecta_problemas[_con_dia_imposible-d\xedas de la semana] PASSED [ 21%]
+tests/test_data_validation.py::test_la_validacion_detecta_problemas[_con_fin_de_semana_invalido-es_fin_semana] PASSED [ 22%]
+tests/test_data_validation.py::test_la_validacion_detecta_problemas[_con_conteo_cero-menores a 1] PASSED [ 23%]
+tests/test_data_validation.py::test_la_validacion_detecta_problemas[_con_texto_en_numerica-no num\xe9ricas] PASSED [ 25%]
+tests/test_data_validation.py::test_la_validacion_detecta_columna_faltante PASSED [ 26%]
+tests/test_data_validation.py::test_la_validacion_detecta_tabla_vacia PASSED [ 27%]
+tests/test_data_validation.py::test_la_validacion_detecta_traslape_temporal PASSED [ 28%]
+tests/test_data_validation.py::test_la_validacion_detecta_particiones_vacias PASSED [ 30%]
+tests/test_data_validation.py::test_deepchecks_integridad_genera_reporte PASSED [ 31%]
+tests/test_data_validation.py::test_deepchecks_drift_genera_reporte PASSED [ 32%]
+tests/test_ingesta.py::test_limpieza_conserva_un_viaje_normal_y_calcula_columnas PASSED [ 34%]
+tests/test_ingesta.py::test_limpieza_elimina_anomalias PASSED            [ 35%]
+tests/test_ingesta.py::test_limpieza_conserva_los_limites_de_duracion[1.0] PASSED [ 36%]
+tests/test_ingesta.py::test_limpieza_conserva_los_limites_de_duracion[240.0] PASSED [ 38%]
+tests/test_ingesta.py::test_limpieza_une_varios_archivos PASSED          [ 39%]
+tests/test_ingesta.py::test_limpieza_lee_archivos_en_latin1 PASSED       [ 40%]
+tests/test_ingesta.py::test_limpieza_resultado_vacio_si_todo_es_anomalo PASSED [ 42%]
+tests/test_ingesta.py::test_hash_coincide_con_sha256_conocido PASSED     [ 43%]
+tests/test_ingesta.py::test_hash_de_archivo_mayor_a_un_bloque PASSED     [ 44%]
+tests/test_ingesta.py::test_hash_cambia_si_cambia_el_archivo PASSED      [ 46%]
+tests/test_ingesta.py::test_hash_de_archivo_vacio PASSED                 [ 47%]
+tests/test_modelado.py::test_profundidad[None-None] PASSED               [ 48%]
+tests/test_modelado.py::test_profundidad[-1-None] PASSED                 [ 50%]
+tests/test_modelado.py::test_profundidad[0-None] PASSED                  [ 51%]
+tests/test_modelado.py::test_profundidad[10-10] PASSED                   [ 52%]
+tests/test_modelado.py::test_profundidad[20-20] PASSED                   [ 53%]
+tests/test_modelado.py::test_max_depth_menos_uno_llega_como_sin_limite_al_modelo PASSED [ 55%]
+tests/test_modelado.py::test_rejilla_p3_prueba_k_de_2_a_6 PASSED         [ 56%]
+tests/test_modelado.py::test_rejilla_logreg_no_tiene_hiperparametros PASSED [ 57%]
+tests/test_modelado.py::test_rejilla_arboles_combina_estimadores_y_profundidades[rf] PASSED [ 59%]
+tests/test_modelado.py::test_rejilla_arboles_combina_estimadores_y_profundidades[hgb] PASSED [ 60%]
+tests/test_modelado.py::test_rejilla_no_repite_combinaciones_si_n_estimators_es_100 PASSED [ 61%]
+tests/test_modelado.py::test_nombre_corrida[p1-rf-hp0-p1_rf_n100_dNone] PASSED [ 63%]
+tests/test_modelado.py::test_nombre_corrida[p2-logreg-hp1-p2_logreg] PASSED [ 64%]
+tests/test_modelado.py::test_nombre_corrida[p3-kmeans-hp2-p3_kmeans_k4] PASSED [ 65%]
+tests/test_modelado.py::test_candidatas_p1_minimiza_y_toma_la_mejor_de_cada_familia PASSED [ 67%]
+tests/test_modelado.py::test_candidatas_p2_maximiza_recall PASSED        [ 68%]
+tests/test_modelado.py::test_candidatas_no_pasan_del_maximo PASSED       [ 69%]
+tests/test_modelado.py::test_candidatas_con_menos_resultados_que_el_maximo PASSED [ 71%]
+tests/test_modelado.py::test_metrica_de_seleccion_ligada_al_negocio PASSED [ 72%]
+tests/test_modelado.py::test_construir_modelo_combinacion_no_soportada PASSED [ 73%]
+tests/test_modelado.py::test_baselines_son_dummy PASSED                  [ 75%]
+tests/test_modelado.py::test_p2_balancea_clases PASSED                   [ 76%]
+tests/test_modelado.py::test_particiones_validacion_y_entrenamiento_son_complementarias[p1] PASSED [ 77%]
+tests/test_modelado.py::test_particiones_validacion_y_entrenamiento_son_complementarias[p2] PASSED [ 78%]
+tests/test_modelado.py::test_p2_target_es_binario_entero PASSED          [ 80%]
+tests/test_modelado.py::test_p3_devuelve_matriz_de_perfiles PASSED       [ 81%]
+tests/test_modelado.py::test_particion_vacia_lanza_error PASSED          [ 82%]
+tests/test_modelado.py::test_falta_el_parquet_da_mensaje_claro PASSED    [ 84%]
+tests/test_modelado.py::test_version_datos_toma_los_primeros_12_caracteres PASSED [ 85%]
+tests/test_modelado.py::test_version_datos_sin_manifiesto PASSED         [ 86%]
+tests/test_modelado.py::test_version_datos_con_manifiesto_danado_no_rompe_el_entrenamiento[esto no es json] PASSED [ 88%]
+tests/test_modelado.py::test_version_datos_con_manifiesto_danado_no_rompe_el_entrenamiento[[]] PASSED [ 89%]
+tests/test_modelado.py::test_version_datos_con_manifiesto_danado_no_rompe_el_entrenamiento[{"hash_sha256": 123}] PASSED [ 90%]
+tests/test_modelado.py::test_version_datos_con_manifiesto_danado_no_rompe_el_entrenamiento[] PASSED [ 92%]
+tests/test_modelado.py::test_nombres_del_model_registry PASSED           [ 93%]
+tests/test_modelado.py::test_register_selecciona_con_validacion_no_con_prueba PASSED [ 94%]
+tests/test_modelado.py::test_mejora_respecto_al_baseline[True-1.0-0.8-+0.2000 (+20.0%)] PASSED [ 96%]
+tests/test_modelado.py::test_mejora_respecto_al_baseline[False-0.5-0.75-+0.2500 (+50.0%)] PASSED [ 97%]
+tests/test_modelado.py::test_mejora_respecto_al_baseline[True-1.0-1.2--0.2000 (-20.0%)] PASSED [ 98%]
+tests/test_modelado.py::test_mejora_con_baseline_cero_no_divide PASSED   [100%]
 
-=============================== warnings summary ===============================
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:64
-  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+============================== warnings summary ===============================
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:64
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
     prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
 
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85
-  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
     parse = parser.parseString(pattern)
 
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89
-  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89
+.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Lib\site-packages\matplotlib\_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
     parser.resetCache()
 
-../../../mlops-env/lib/python3.14/site-packages/matplotlib/_mathtext.py:45
-  /home/ivan/mlops-env/lib/python3.14/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+.venv\Lib\site-packages\matplotlib\_mathtext.py:45
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Lib\site-packages\matplotlib\_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
     ParserElement.enablePackrat()
 
+tests/test_data_validation.py::test_deepchecks_integridad_genera_reporte
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Lib\site-packages\deepchecks\tabular\suite.py:117: DeprecationWarning: the `interpolation=` argument to quantile was renamed to `method=`, which has additional options.
+  Users of the modes 'nearest', 'lower', 'higher', or 'midpoint' are encouraged to review the method they used. (Deprecated NumPy 1.22)
+    check_result = check.run_logic(context, dataset_kind=DatasetKind.TRAIN)
+
+tests/test_data_validation.py::test_deepchecks_integridad_genera_reporte
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\tests\test_data_validation.py:324: UserWarning: DeepChecks (integridad): 1 chequeo(s) con condiciones no superadas. Revisa el reporte: C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\reports\testing\generated\deepchecks_data_integrity.html
+    _avisar_si_hay_hallazgos("integridad", resultado, ruta)
+
+tests/test_data_validation.py::test_deepchecks_drift_genera_reporte
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Lib\site-packages\deepchecks\tabular\checks\train_test_validation\train_test_samples_mix.py:85: FutureWarning: DataFrame.applymap has been deprecated. Use DataFrame.map instead.
+    duplicates_df = duplicates_df.applymap(lambda x: None if x == NAN_REPLACEMENT else x)
+
+tests/test_data_validation.py::test_deepchecks_drift_genera_reporte
+tests/test_data_validation.py::test_deepchecks_drift_genera_reporte
+tests/test_data_validation.py::test_deepchecks_drift_genera_reporte
+tests/test_data_validation.py::test_deepchecks_drift_genera_reporte
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\.venv\Lib\site-packages\sklearn\utils\_tags.py:338: DeprecationWarning: The following error was raised: 'MyModelWrapper' object has no attribute '__sklearn_tags__'. It seems that there are no classes that implement `__sklearn_tags__` in the MRO and/or all classes in the MRO call `super().__sklearn_tags__()`. Make sure to inherit from `BaseEstimator` which implements `__sklearn_tags__` (or alternatively define `__sklearn_tags__` but we don't recommend this approach). Note that `BaseEstimator` needs to be on the right side of other Mixins in the inheritance order. The default are now used instead since retrieving tags failed. This warning will be replaced by an error in 1.8.
+    warnings.warn(
+
+tests/test_data_validation.py::test_deepchecks_drift_genera_reporte
+  C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\tests\test_data_validation.py:340: UserWarning: DeepChecks (drift): 2 chequeo(s) con condiciones no superadas. Revisa el reporte: C:\Users\mafra\Documents\Maestria AI\4.2 MLOPs\TC5061-Proyecto-Equipo08\reports\testing\generated\deepchecks_train_test_drift.html
+    _avisar_si_hay_hallazgos("drift", resultado, ruta)
+
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================== 9 passed, 14 warnings in 4.58s ========================
+====================== 76 passed, 22 warnings in 31.35s =======================

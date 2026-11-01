@@ -65,14 +65,16 @@ Los datos son descargados automáticamente durante la ejecución del pipeline de
 
 ## Instalación
 
+El equipo ejecutó el proyecto con Python 3.13 y 3.14.
 
 ```bash
-python -m venv mlops-env
-source mlops-env/bin/activate
+python -m venv .venv
+# Windows (PowerShell): .\.venv\Scripts\Activate.ps1
+# Linux / macOS / WSL:   source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -r requirements.txt        # entrenamiento y MLflow
+pip install -r requirements-dev.txt    # además: pruebas, DeepChecks y chequeos de seguridad
 ```
-
 
 ## Ingesta de datos
 
@@ -88,15 +90,8 @@ Este comando:
 
 ## Ejecución de experimentos
 
-```bash
-python -m mibici.modeling.train
-```
-
-Este comando:
-- Ejecuta P1 (regresión).
-- Ejecuta P2 (clasificación).
-- Ejecuta P3 (clustering).
-- Registra métricas y artefactos en MLflow.
+Las corridas de entrenamiento, búsqueda y registro de modelos se lanzan con `mlflow run`
+(ver la sección "Reproducción con MLflow Project" más abajo).
 
 ## Flujo de trabajo Git
 
@@ -132,23 +127,22 @@ Todo cambio debe realizarse en una rama de trabajo y fusionarse mediante Pull Re
 TC5061-Proyecto-Equipo08
 │
 ├── data/
-│   ├── raw/                     <- Datos abiertos originales de MiBici
-│   └── processed/               <- Datos procesados y manifiestos
+│   ├── raw/                     <- Datos abiertos originales de MiBici (no se versionan)
+│   └── processed/               <- Datos procesados y manifiesto (no se versionan)
 │
 ├── docs/                        <- Documentación adicional del proyecto
 │
 ├── mibici/                      <- Código fuente principal
 │   ├── __init__.py
-│   ├── config.py                <- Configuración global
+│   ├── config.py                <- Configuración global (rutas, fechas, semilla y MLflow)
 │   ├── dataset.py               <- Ingesta y procesamiento de datos
 │   ├── features.py              <- Generación de variables para modelado
 │   ├── plots.py                 <- Generación de visualizaciones
 │   └── modeling/
 │       ├── __init__.py
-│       ├── train.py             <- Entrenamiento y registro en MLflow
+│       ├── train.py             <- Baselines, búsqueda con nested runs y candidatas
+│       ├── register.py          <- Registro de modelos y alias `champion`
 │       └── predict.py           <- Inferencia y predicciones
-│
-├── mlruns/                      <- Experimentos registrados por MLflow
 │
 ├── models/                      <- Modelos serializados (cuando aplique)
 │
@@ -157,29 +151,30 @@ TC5061-Proyecto-Equipo08
 │
 ├── references/
 │   ├── Arquitectura_Equipo8.pdf <- Arquitectura de la solución
-│   └── ml_canvas.pdf            <- ML Canvas del proyecto
+│   ├── ml_canvas.pdf            <- ML Canvas del proyecto
+│   └── runs.csv
 │
 ├── reports/
 │   ├── figures/                 <- Figuras de análisis y evidencias de ejecución
-│   │   ├── pytest_execution.png
-│   │   ├── bandit_execution.png
-│   │   └── pip_audit_execution.png
-│   ├── security/
-│   │   ├── bandit_report.txt    <- Reporte de análisis estático de seguridad con Bandit
-│   │   └── pip_audit_report.txt <- Reporte de auditoría de dependencias con pip-audit
-│   └── testing/
-│       └── pytest_report.txt    <- Reporte de ejecución de pruebas unitarias con PyTest
+│   ├── security/                <- Reportes de Bandit y pip-audit
+│   └── testing/                 <- Reporte de PyTest y reportes HTML de DeepChecks
+│
 ├── tests/
-│   └── test_data.py             <- Pruebas unitarias y reproducibilidad
+│   ├── test_data.py             <- Feature engineering y reproducibilidad
+│   ├── test_ingesta.py          <- Limpieza de viajes y hash de datos
+│   ├── test_modelado.py         <- Rejilla, candidatas, particiones y registro
+│   └── test_data_validation.py  <- Calidad de datos y reportes de DeepChecks
 │
 ├── .env                         <- Archivo local (excluido mediante .gitignore)
 ├── .env.example                 <- Plantilla pública de variables de entorno
 ├── .gitignore
 ├── Makefile
+├── MLproject                    <- Puntos de entrada de MLflow Project (ingest, train, register)
 ├── pyproject.toml
-├── requirements.txt
-├── README.md
-└── mlflow.db                    <- Base de datos local de tracking (excluida mediante .gitignore)
+├── python_env.yaml              <- Entorno declarado para MLflow Project
+├── requirements.txt             <- Dependencias de entrenamiento (versiones fijas)
+├── requirements-dev.txt         <- Pruebas, DeepChecks y chequeos de seguridad
+└── README.md
 ```
 
 --------
@@ -280,45 +275,45 @@ modelo = mlflow.pyfunc.load_model("models:/mibici-equipo08-p1-demanda@champion")
 
 El script también genera `reports/tabla_comparativa.csv` para el reporte.
 
-## 7. Pruebas unitarias con PyTest
+## 7. Pruebas automatizadas y chequeos de calidad
 
-Las pruebas automatizadas se encuentran en la carpeta `tests/`.
+### Entorno de pruebas
 
-Para ejecutarlas:
+Las herramientas de prueba y seguridad se instalan aparte del entorno de entrenamiento, para que
+`mlflow run` no instale paquetes que no necesita.
 
 ```bash
-pytest tests/test_data.py -v
+python -m venv .venv
+# Windows (PowerShell): .\.venv\Scripts\Activate.ps1
+# Linux / macOS / WSL:   source .venv/bin/activate
+pip install -r requirements-dev.txt
 ```
 
-El conjunto de pruebas finalizó sin errores, obteniéndose:
+`requirements-dev.txt` incluye `requirements.txt` más PyTest, DeepChecks, Bandit y pip-audit
+(y `setuptools` fijado, porque DeepChecks 0.19.1 requiere `pkg_resources`).
 
-```text
-collected 9 items
+### Ejecución con un solo comando
 
-tests/test_data.py::test_preparar_features_p1_demanda_caso_normal PASSED
-tests/test_data.py::test_preparar_features_p1_demanda_edge_case_vacio PASSED
-tests/test_data.py::test_preparar_features_p2_riesgo_caso_normal PASSED
-tests/test_data.py::test_preparar_features_p2_riesgo_edge_case_vacio PASSED
-tests/test_data.py::test_preparar_features_p3_clustering_caso_normal PASSED
-tests/test_data.py::test_preparar_features_p3_clustering_edge_case_vacio PASSED
-tests/test_data.py::test_reproducibilidad_entrenamiento_p1_rf PASSED
-tests/test_data.py::test_reproducibilidad_entrenamiento_p2_logreg PASSED
-tests/test_data.py::test_reproducibilidad_entrenamiento_p3_kmeans PASSED
-
-======================== 9 passed ========================
+```bash
+python -m pytest tests -v
 ```
 
-El reporte completo se encuentra en:
+Se usa `python -m pytest` para que la raíz del proyecto quede en la ruta de importación y
+las pruebas puedan importar el paquete `mibici`.
 
-```text
-reports/testing/pytest_report.txt
-```
+### Qué cubre cada archivo
 
-Evidencia visual
+| Archivo | Qué prueba |
+|---|---|
+| `tests/test_data.py` | Feature engineering de P1, P2 y P3 (caso normal y caso vacío) y reproducibilidad del entrenamiento (misma semilla, mismas predicciones) |
+| `tests/test_ingesta.py` | Limpieza de viajes (cancelados, muy cortos o largos, edad imposible), límites de 1 y 240 minutos, lectura en latin-1 y hash SHA256 |
+| `tests/test_modelado.py` | Conversión de `max_depth=-1`, rejilla de hiperparámetros, elección de candidatas, particiones temporales sin traslape, versión de datos y nombres del Model Registry |
+| `tests/test_data_validation.py` | Validación de integridad y drift del dataset con DeepChecks |
 
-```text
-reports/figures/pytest_execution.png
-```
+### Evidencia
+
+Reporte de ejecución: `reports/testing/pytest_report.txt`.
+Captura: `reports/figures/pytest_execution.png`.
 
 ## 8. Chequeos de seguridad
 
@@ -328,34 +323,14 @@ El repositorio utiliza `.gitignore` para evitar la publicación accidental de ar
 
 Elementos excluidos:
 
-- `.env`
+- `.env` y `.env.*`
 - `mlflow.db`
-- `mlruns/`
-- `mlartifacts/`
+- `mlruns/` y `mlartifacts/`
 - `.venv/`
 - `__pycache__/`
+- `reports/testing/generated/`
 
-Revisión:
-```bash
-# Verificación de reglas de exclusión en .gitignore
-grep -E "^(\.env|mlflow\.db|mlruns/|mlartifacts/|\.venv/|__pycache__)" .gitignore
-# Respuesta:
-__pycache__/
-.env
-mlruns/
-mlartifacts/
-mlflow.db
-.venv/
-mlruns/
-mlartifacts/
-mlflow.db
-.env
-.env.*
-mlflow.db
-```
-
-
-Se verificó además que Git no rastrea archivos sensibles ni artefactos locales. Para ello se ejecutaron los siguientes comandos:
+Se verificó además que Git no rastrea archivos sensibles ni artefactos locales:
 
 ```bash
 git ls-files .env
@@ -363,7 +338,7 @@ git ls-files mlflow.db
 git ls-files | grep "^mlruns/"
 ```
 
-Los comandos no devolvieron resultados, confirmando que dichos recursos no forman parte del repositorio versionado.
+Los comandos no devolvieron resultados: dichos recursos no forman parte del árbol versionado actual.
 
 ### Variables de entorno y configuración
 
@@ -393,72 +368,69 @@ El archivo .env local permanece excluido mediante .gitignore para evitar la publ
 
 ### Análisis estático de seguridad con Bandit
 
-Se ejecutó un análisis estático del código fuente utilizando Bandit:
-
 ```bash
 bandit -r mibici/
 ```
-El reporte completo se encuentra en:
 
-```text
-reports/security/bandit_report.txt
-```
+Reporte completo: `reports/security/bandit_report.txt`. Evidencia visual: `reports/figures/bandit_execution.png`.
 
-Evidencia visual:
+**Hallazgo inicial.** La primera ejecución (885 líneas de código) reportó 1 hallazgo de severidad baja (B110, `try/except/pass`) en `obtener_version_datos()` de `mibici/modeling/train.py`, que ignoraba en silencio los errores de lectura del manifiesto de datos. No hubo hallazgos de severidad media ni alta.
 
-```text
-reports/figures/bandit_execution.png
-```
+**Corrección.** La función ahora captura solo errores de lectura o de formato del manifiesto (`OSError`, `ValueError`, `AttributeError`, `TypeError`) y avisa por consola. Se agregaron pruebas en `tests/test_modelado.py` (PR #28).
 
-**Resultado resumido:**
-
-Total lines of code: 885
-
-- Low severity issues: 1
-- Medium severity issues: 0
-- High severity issues: 0
-
-
-El análisis identificó una observación de severidad baja asociada al uso de:
-
-```python
-except Exception:
-    pass
-```
-en mibici/modeling/train.py.
-
-No se detectaron vulnerabilidades de severidad media o alta.
-
+**Resultado posterior a la corrección:** 0 hallazgos de severidad baja, media y alta (reporte y captura actualizados).
 
 ### Auditoría de dependencias con pip-audit
-
-Se ejecutó la revisión de dependencias:
 
 ```bash
 pip-audit -r requirements.txt
 ```
 
-Reporte completo:
+Reporte completo: `reports/security/pip_audit_report.txt`. Evidencia visual: `reports/figures/pip_audit_execution.png`.
 
-```text
-reports/security/pip_audit_report.txt
+**Resultado:** el reporte tiene 53 filas, que corresponden a 39 identificadores únicos (algunos aparecen repetidos) en 4 dependencias. El detalle de cada identificador se consulta con `pip-audit -r requirements.txt --desc`.
+
+**Decisión para esta entrega.** El equipo acepta el riesgo y programa la actualización para la siguiente etapa, porque cada dependencia se usa en un contexto de exposición limitada y actualizar a mitad de la entrega puede alterar la reproducibilidad de los modelos ya registrados:
+
+| Dependencia | Versión | Identificadores únicos | Corregida en | Justificación |
+|---|---|---|---|---|
+| GitPython | 3.1.45 | 34 | 3.2.1 | Solo se usa para leer el hash del commit del repositorio local |
+| MLflow | 3.16.1 | 3 | 3.17.2 | El servidor de tracking corre localmente (127.0.0.1); actualizar puede requerir migrar `mlflow.db` |
+| PyArrow | 21.0.0 | 1 | 23.0.1 | Solo lee y escribe archivos Parquet generados por el propio proyecto |
+| Requests | 2.32.5 | 1 | 2.33.0 | Solo descarga los CSV públicos de MiBici |
+
+### Historial de Git
+
+El archivo `mlflow.db` estuvo versionado en commits anteriores y después se retiró y se agregó al `.gitignore`. Contiene metadatos de corridas (sin credenciales). No se reescribió el historial para no afectar las ramas del equipo; el árbol actual del repositorio no lo contiene.
+
+## 9. Validación de datos con DeepChecks
+
+`tests/test_data_validation.py` valida la tabla de demanda de P1 (estación x fecha x hora), que no
+contiene datos personales. Usa `data/processed/viajes_clean.parquet` y, si no existe, viajes
+sintéticos con el mismo esquema. Entrenamiento (enero-abril) y prueba (mayo) se separan con las
+fechas de `mibici/config.py`, igual que en el modelado.
+
+| Tipo | Qué revisa | Resultado |
+|---|---|---|
+| Reglas de calidad (pandas) | Valores faltantes, filas duplicadas en la llave (estación, fecha, hora), tipos numéricos, rangos (hora 0-23, día 0-6, conteo >= 1) y separación temporal entre entrenamiento y prueba | **La prueba falla** si no se cumplen |
+| DeepChecks `data_integrity` | Reporte de integridad del entrenamiento | Se genera el HTML y se avisa si hay condiciones no superadas |
+| DeepChecks `train_test_validation` | Drift entre entrenamiento y prueba | Se genera el HTML y se avisa si hay condiciones no superadas |
+
+Los hallazgos de DeepChecks **se reportan sin hacer fallar la prueba**: sus condiciones por defecto
+(por ejemplo, 0 % de duplicados) no aplican a esta tabla, porque al quitar la fecha las combinaciones
+de variables se repiten entre días por construcción, y entre enero-abril y mayo es esperable un drift
+estacional. Las reglas que sí son errores de calidad se verifican de forma explícita.
+
+Los reportes se guardan en `reports/testing/generated/` (ignorada por Git). Para actualizar la
+evidencia versionada (`reports/testing/deepchecks_data_integrity.html` y
+`reports/testing/deepchecks_train_test_drift.html`):
+
+```powershell
+$env:DEEPCHECKS_GUARDAR_EVIDENCIA = "1"
+python -m pytest tests/test_data_validation.py -q
+Remove-Item Env:DEEPCHECKS_GUARDAR_EVIDENCIA
 ```
 
-Evidencia visual:
-
-```text
-reports/figures/pip_audit_execution.png
-```
-
-**Resultado resumido:**
-
-53 vulnerabilidades conocidas detectadas en 4 dependencias.
-
-Dependencias reportadas:
-
-* GitPython 3.1.45
-* MLflow 3.16.1
-* PyArrow 21.0.0
-* Requests 2.32.5
-
-La herramienta identificó versiones corregidas para cada dependencia reportada. Esta información puede utilizarse para evaluar futuras actualizaciones del entorno del proyecto.
+**Limitación conocida:** DeepChecks 0.19.1 usa `pkg_resources` (de ahí `setuptools==69.5.1`) y
+requiere parches de compatibilidad con NumPy 2 y scikit-learn, que están en el propio archivo de
+pruebas. Con scikit-learn 1.8 o superior podría fallar y habría que actualizar DeepChecks.
