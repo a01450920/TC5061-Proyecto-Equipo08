@@ -65,14 +65,16 @@ Los datos son descargados automáticamente durante la ejecución del pipeline de
 
 ## Instalación
 
+El equipo ejecutó el proyecto con Python 3.13 y 3.14.
 
 ```bash
-python -m venv mlops-env
-source mlops-env/bin/activate
+python -m venv .venv
+# Windows (PowerShell): .\.venv\Scripts\Activate.ps1
+# Linux / macOS / WSL:   source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -r requirements.txt        # entrenamiento y MLflow
+pip install -r requirements-dev.txt    # además: pruebas, DeepChecks y chequeos de seguridad
 ```
-
 
 ## Ingesta de datos
 
@@ -88,15 +90,8 @@ Este comando:
 
 ## Ejecución de experimentos
 
-```bash
-python -m mibici.modeling.train
-```
-
-Este comando:
-- Ejecuta P1 (regresión).
-- Ejecuta P2 (clasificación).
-- Ejecuta P3 (clustering).
-- Registra métricas y artefactos en MLflow.
+Las corridas de entrenamiento, búsqueda y registro de modelos se lanzan con `mlflow run`
+(ver la sección "Reproducción con MLflow Project" más abajo).
 
 ## Flujo de trabajo Git
 
@@ -132,23 +127,22 @@ Todo cambio debe realizarse en una rama de trabajo y fusionarse mediante Pull Re
 TC5061-Proyecto-Equipo08
 │
 ├── data/
-│   ├── raw/                     <- Datos abiertos originales de MiBici
-│   └── processed/               <- Datos procesados y manifiestos
+│   ├── raw/                     <- Datos abiertos originales de MiBici (no se versionan)
+│   └── processed/               <- Datos procesados y manifiesto (no se versionan)
 │
 ├── docs/                        <- Documentación adicional del proyecto
 │
 ├── mibici/                      <- Código fuente principal
 │   ├── __init__.py
-│   ├── config.py                <- Configuración global
+│   ├── config.py                <- Configuración global (rutas, fechas, semilla y MLflow)
 │   ├── dataset.py               <- Ingesta y procesamiento de datos
 │   ├── features.py              <- Generación de variables para modelado
 │   ├── plots.py                 <- Generación de visualizaciones
 │   └── modeling/
 │       ├── __init__.py
-│       ├── train.py             <- Entrenamiento y registro en MLflow
+│       ├── train.py             <- Baselines, búsqueda con nested runs y candidatas
+│       ├── register.py          <- Registro de modelos y alias `champion`
 │       └── predict.py           <- Inferencia y predicciones
-│
-├── mlruns/                      <- Experimentos registrados por MLflow
 │
 ├── models/                      <- Modelos serializados (cuando aplique)
 │
@@ -157,29 +151,30 @@ TC5061-Proyecto-Equipo08
 │
 ├── references/
 │   ├── Arquitectura_Equipo8.pdf <- Arquitectura de la solución
-│   └── ml_canvas.pdf            <- ML Canvas del proyecto
+│   ├── ml_canvas.pdf            <- ML Canvas del proyecto
+│   └── runs.csv
 │
 ├── reports/
 │   ├── figures/                 <- Figuras de análisis y evidencias de ejecución
-│   │   ├── pytest_execution.png
-│   │   ├── bandit_execution.png
-│   │   └── pip_audit_execution.png
-│   ├── security/
-│   │   ├── bandit_report.txt    <- Reporte de análisis estático de seguridad con Bandit
-│   │   └── pip_audit_report.txt <- Reporte de auditoría de dependencias con pip-audit
-│   └── testing/
-│       └── pytest_report.txt    <- Reporte de ejecución de pruebas unitarias con PyTest
+│   ├── security/                <- Reportes de Bandit y pip-audit
+│   └── testing/                 <- Reporte de PyTest y reportes HTML de DeepChecks
+│
 ├── tests/
-│   └── test_data.py             <- Pruebas unitarias y reproducibilidad
+│   ├── test_data.py             <- Feature engineering y reproducibilidad
+│   ├── test_ingesta.py          <- Limpieza de viajes y hash de datos
+│   ├── test_modelado.py         <- Rejilla, candidatas, particiones y registro
+│   └── test_data_validation.py  <- Calidad de datos y reportes de DeepChecks
 │
 ├── .env                         <- Archivo local (excluido mediante .gitignore)
 ├── .env.example                 <- Plantilla pública de variables de entorno
 ├── .gitignore
 ├── Makefile
+├── MLproject                    <- Puntos de entrada de MLflow Project (ingest, train, register)
 ├── pyproject.toml
-├── requirements.txt
-├── README.md
-└── mlflow.db                    <- Base de datos local de tracking (excluida mediante .gitignore)
+├── python_env.yaml              <- Entorno declarado para MLflow Project
+├── requirements.txt             <- Dependencias de entrenamiento (versiones fijas)
+├── requirements-dev.txt         <- Pruebas, DeepChecks y chequeos de seguridad
+└── README.md
 ```
 
 --------
@@ -280,11 +275,12 @@ modelo = mlflow.pyfunc.load_model("models:/mibici-equipo08-p1-demanda@champion")
 
 El script también genera `reports/tabla_comparativa.csv` para el reporte.
 
-## 7. Pruebas unitarias con PyTest
+## 7. Pruebas automatizadas y chequeos de calidad
 
-Las pruebas automatizadas se encuentran en la carpeta `tests/`.
+### Entorno de pruebas
 
-Para ejecutarlas:
+Las herramientas de prueba y seguridad se instalan aparte del entorno de entrenamiento, para que
+`mlflow run` no instale paquetes que no necesita.
 
 ```bash
 python -m venv .venv
@@ -331,34 +327,14 @@ El repositorio utiliza `.gitignore` para evitar la publicación accidental de ar
 
 Elementos excluidos:
 
-- `.env`
+- `.env` y `.env.*`
 - `mlflow.db`
-- `mlruns/`
-- `mlartifacts/`
+- `mlruns/` y `mlartifacts/`
 - `.venv/`
 - `__pycache__/`
+- `reports/testing/generated/`
 
-Revisión:
-```bash
-# Verificación de reglas de exclusión en .gitignore
-grep -E "^(\.env|mlflow\.db|mlruns/|mlartifacts/|\.venv/|__pycache__)" .gitignore
-# Respuesta:
-__pycache__/
-.env
-mlruns/
-mlartifacts/
-mlflow.db
-.venv/
-mlruns/
-mlartifacts/
-mlflow.db
-.env
-.env.*
-mlflow.db
-```
-
-
-Se verificó además que Git no rastrea archivos sensibles ni artefactos locales. Para ello se ejecutaron los siguientes comandos:
+Se verificó además que Git no rastrea archivos sensibles ni artefactos locales:
 
 ```bash
 git ls-files .env
@@ -366,7 +342,7 @@ git ls-files mlflow.db
 git ls-files | grep "^mlruns/"
 ```
 
-Los comandos no devolvieron resultados, confirmando que dichos recursos no forman parte del repositorio versionado.
+Los comandos no devolvieron resultados: dichos recursos no forman parte del árbol versionado actual.
 
 ### Variables de entorno y configuración
 
@@ -396,8 +372,6 @@ El archivo .env local permanece excluido mediante .gitignore para evitar la publ
 
 ### Análisis estático de seguridad con Bandit
 
-Se ejecutó un análisis estático del código fuente utilizando Bandit:
-
 ```bash
 bandit -r mibici/
 ```
@@ -412,6 +386,7 @@ Reporte completo: [Bandit Report](reports/security/bandit_report.txt)
 
 **Resultado posterior a la corrección:** 0 hallazgos de severidad baja, media y alta (reporte y captura actualizados).
 
+**Resultado posterior a la corrección:** 0 hallazgos de severidad baja, media y alta (reporte y captura actualizados).
 
 ### Evidencia de ejecución de Bandit
 
@@ -421,13 +396,16 @@ Primera iteración:
 Segunda iteración:
 ![Bandit_tania](reports/figures/bandit_execution_taniamafra.png)
 
-### Auditoría de dependencias con pip-audit
+**Decisión para esta entrega.** El equipo acepta el riesgo y programa la actualización para la siguiente etapa, porque cada dependencia se usa en un contexto de exposición limitada y actualizar a mitad de la entrega puede alterar la reproducibilidad de los modelos ya registrados:
 
-Se ejecutó la revisión de dependencias:
+| Dependencia | Versión | Identificadores únicos | Corregida en | Justificación |
+|---|---|---|---|---|
+| GitPython | 3.1.45 | 34 | 3.2.1 | Solo se usa para leer el hash del commit del repositorio local |
+| MLflow | 3.16.1 | 3 | 3.17.2 | El servidor de tracking corre localmente (127.0.0.1); actualizar puede requerir migrar `mlflow.db` |
+| PyArrow | 21.0.0 | 1 | 23.0.1 | Solo lee y escribe archivos Parquet generados por el propio proyecto |
+| Requests | 2.32.5 | 1 | 2.33.0 | Solo descarga los CSV públicos de MiBici |
 
-```bash
-pip-audit -r requirements.txt
-```
+### Historial de Git
 
 Reporte completo: [pip-audit Report](reports/security/pip_audit_report.txt)
 
