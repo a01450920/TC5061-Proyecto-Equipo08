@@ -312,8 +312,12 @@ las pruebas puedan importar el paquete `mibici`.
 
 ### Evidencia
 
-Reporte de ejecución: `reports/testing/pytest_report.txt`.
-Captura: `reports/figures/pytest_execution.png`.
+Reporte completo: [pytest Report](reports/testing/pytest_report.txt)
+
+
+### Evidencia de ejecución de PyTest
+
+![PyTest](reports/figures/pytest_execution.png)
 
 ## 8. Chequeos de seguridad
 
@@ -372,7 +376,9 @@ El archivo .env local permanece excluido mediante .gitignore para evitar la publ
 bandit -r mibici/
 ```
 
-Reporte completo: `reports/security/bandit_report.txt`. Evidencia visual: `reports/figures/bandit_execution.png`.
+Reporte completo: [Bandit Report](reports/security/bandit_report.txt)
+
+
 
 **Hallazgo inicial.** La primera ejecución (885 líneas de código) reportó 1 hallazgo de severidad baja (B110, `try/except/pass`) en `obtener_version_datos()` de `mibici/modeling/train.py`, que ignoraba en silencio los errores de lectura del manifiesto de datos. No hubo hallazgos de severidad media ni alta.
 
@@ -380,13 +386,33 @@ Reporte completo: `reports/security/bandit_report.txt`. Evidencia visual: `repor
 
 **Resultado posterior a la corrección:** 0 hallazgos de severidad baja, media y alta (reporte y captura actualizados).
 
-### Auditoría de dependencias con pip-audit
+**Resultado posterior a la corrección:** 0 hallazgos de severidad baja, media y alta (reporte y captura actualizados).
 
-```bash
-pip-audit -r requirements.txt
-```
+### Evidencia de ejecución de Bandit
 
-Reporte completo: `reports/security/pip_audit_report.txt`. Evidencia visual: `reports/figures/pip_audit_execution.png`.
+Primera iteración:
+![Bandit](reports/figures/bandit_execution.png)
+
+Segunda iteración:
+![Bandit_tania](reports/figures/bandit_execution_taniamafra.png)
+
+**Decisión para esta entrega.** El equipo acepta el riesgo y programa la actualización para la siguiente etapa, porque cada dependencia se usa en un contexto de exposición limitada y actualizar a mitad de la entrega puede alterar la reproducibilidad de los modelos ya registrados:
+
+| Dependencia | Versión | Identificadores únicos | Corregida en | Justificación |
+|---|---|---|---|---|
+| GitPython | 3.1.45 | 34 | 3.2.1 | Solo se usa para leer el hash del commit del repositorio local |
+| MLflow | 3.16.1 | 3 | 3.17.2 | El servidor de tracking corre localmente (127.0.0.1); actualizar puede requerir migrar `mlflow.db` |
+| PyArrow | 21.0.0 | 1 | 23.0.1 | Solo lee y escribe archivos Parquet generados por el propio proyecto |
+| Requests | 2.32.5 | 1 | 2.33.0 | Solo descarga los CSV públicos de MiBici |
+
+### Historial de Git
+
+Reporte completo: [pip-audit Report](reports/security/pip_audit_report.txt)
+
+### Evidencia de ejecución de pip audit
+
+![pip_audit](reports/figures/pip_audit_execution.png)
+
 
 **Resultado:** el reporte tiene 53 filas, que corresponden a 39 identificadores únicos (algunos aparecen repetidos) en 4 dependencias. El detalle de cada identificador se consulta con `pip-audit -r requirements.txt --desc`.
 
@@ -405,6 +431,12 @@ El archivo `mlflow.db` estuvo versionado en commits anteriores y después se ret
 
 ## 9. Validación de datos con DeepChecks
 
+```powershell
+$env:DEEPCHECKS_GUARDAR_EVIDENCIA = "1"
+python -m pytest tests/test_data_validation.py -q
+Remove-Item Env:DEEPCHECKS_GUARDAR_EVIDENCIA
+```
+
 `tests/test_data_validation.py` valida la tabla de demanda de P1 (estación x fecha x hora), que no
 contiene datos personales. Usa `data/processed/viajes_clean.parquet` y, si no existe, viajes
 sintéticos con el mismo esquema. Entrenamiento (enero-abril) y prueba (mayo) se separan con las
@@ -422,14 +454,11 @@ de variables se repiten entre días por construcción, y entre enero-abril y may
 estacional. Las reglas que sí son errores de calidad se verifican de forma explícita.
 
 Los reportes se guardan en `reports/testing/generated/` (ignorada por Git). Para actualizar la
-evidencia versionada (`reports/testing/deepchecks_data_integrity.html` y
-`reports/testing/deepchecks_train_test_drift.html`):
+evidencia versionada:
+- [Data Integrity](reports/testing/deepchecks_data_integrity.html)
+- [Test Drift](reports/testing/deepchecks_train_test_drift.html)
 
-```powershell
-$env:DEEPCHECKS_GUARDAR_EVIDENCIA = "1"
-python -m pytest tests/test_data_validation.py -q
-Remove-Item Env:DEEPCHECKS_GUARDAR_EVIDENCIA
-```
+
 
 **Limitación conocida:** DeepChecks 0.19.1 usa `pkg_resources` (de ahí `setuptools==69.5.1`) y
 requiere parches de compatibilidad con NumPy 2 y scikit-learn, que están en el propio archivo de
