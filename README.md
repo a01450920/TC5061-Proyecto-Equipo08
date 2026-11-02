@@ -434,3 +434,7 @@ Remove-Item Env:DEEPCHECKS_GUARDAR_EVIDENCIA
 **Limitación conocida:** DeepChecks 0.19.1 usa `pkg_resources` (de ahí `setuptools==69.5.1`) y
 requiere parches de compatibilidad con NumPy 2 y scikit-learn, que están en el propio archivo de
 pruebas. Con scikit-learn 1.8 o superior podría fallar y habría que actualizar DeepChecks.
+
+### Evidencia de ejecución de DeepChecks
+
+![DeepChecks](reports/figures/deepchecks_execution.png)
