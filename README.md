@@ -168,6 +168,7 @@ TC5061-Proyecto-Equipo08
 ├── .env                         <- Archivo local (excluido mediante .gitignore)
 ├── .env.example                 <- Plantilla pública de variables de entorno
 ├── .gitignore
+├── Dockerfile                   <- Imagen para despliegue de la API REST
 ├── Makefile
 ├── MLproject                    <- Puntos de entrada de MLflow Project (ingest, train, register)
 ├── pyproject.toml
@@ -386,8 +387,6 @@ Reporte completo: [Bandit Report](reports/security/bandit_report.txt)
 
 **Resultado posterior a la corrección:** 0 hallazgos de severidad baja, media y alta (reporte y captura actualizados).
 
-**Resultado posterior a la corrección:** 0 hallazgos de severidad baja, media y alta (reporte y captura actualizados).
-
 ### Evidencia de ejecución de Bandit
 
 Primera iteración:
@@ -468,24 +467,27 @@ pruebas. Con scikit-learn 1.8 o superior podría fallar y habría que actualizar
 ![DeepChecks](reports/figures/deepchecks_execution.png)
 
 
-# Cambios 04NOV26, Empaquetar modelo del proyecto como API REST en contenedor Podman-Parte1
+# Cambios 04NOV26, API REST y despliegue en contenedor Docker
 
-Se completó la servitización e integración de los modelos de P1 (predicción de demanda) y P2 (riesgo de desbalance) mediante FastAPI y MLflow Model Registry, validando el comportamiento del servicio REST de manera local.
+Se completó la servitización e integración de los modelos de P1 (predicción de demanda) y P2 (riesgo de desbalance) mediante FastAPI y MLflow Model Registry. Se validó el servicio REST tanto de forma local como dentro de un contenedor Docker.
 
-### Resumen del trabajo de esta actualización:
+## Resumen del trabajo de esta actualización:
+
 * **Estructura de la API REST:** se creó el módulo `mibici/api/` conteniendo `app.py` (servidor FastAPI) y `schemas.py` (modelos de datos Pydantic).
-**Validación de entradas:** implementación de los esquemas `PredictRequestP1` y `PredictRequestP2` mediante Pydantic para validar los datos de entrada de los endpoints de predicción de demanda y riesgo de desbalance.
-**Carga dinámica de modelos:** integración con MLflow Model Registry para consumir los modelos etiquetados con el alias `@champion`:
+* **Validación de entradas:** implementación de los esquemas `PredictRequestP1` y `PredictRequestP2` mediante Pydantic para validar los datos de entrada de los endpoints de predicción de demanda y riesgo de desbalance.
+* **Carga dinámica de modelos:** integración con MLflow Model Registry para consumir los modelos etiquetados con el alias `@champion`:
 
     - `models:/mibici-equipo08-p1-demanda@champion`
     - `models:/mibici-equipo08-p2-riesgo@champion`
-* **Casting y compatibilidad de tipos:** ajuste explícito en la conversión de los datos de entrada a `float64` (`double`) para cumplir con la firma inferida por MLflow.
 
+* **Casting y compatibilidad de tipos:** ajuste explícito en la conversión de los datos de entrada a `float64` (`double`) para cumplir con la firma inferida por MLflow.
 * **Endpoints disponibles:**
 
     - `POST /predict/p1`: predicción de demanda de viajes para una estación.
     - `POST /predict/p2`: predicción de riesgo de desbalance.
-**Pruebas y verificación local:** ejecución de la canalización de entrenamiento local (`-e train`), registro de modelos (`-e register`) y pruebas de los endpoints `/predict/p1` y `/predict/p2` en Swagger UI (`http://127.0.0.1:8000/docs`), confirmando respuestas exitosas `200 OK` con inferencias en tiempo real desde los modelos Champion registrados en MLflow.
+
+* **Pruebas y verificación local:** ejecución de la canalización de entrenamiento local (`-e train`), registro de modelos (`-e register`) y pruebas de los endpoints `/predict/p1` y `/predict/p2` en Swagger UI (`http://127.0.0.1:8000/docs`), confirmando respuestas exitosas `200 OK` con inferencias en tiempo real desde los modelos Champion registrados en MLflow.
+* **Contenerización:** creación de un Dockerfile para empaquetar la API FastAPI y sus dependencias de inferencia.
 
 ## Despliegue con Docker
 
@@ -497,7 +499,12 @@ Antes de iniciar la API, debe existir un servidor de tracking de MLflow accesibl
 mlflow server --backend-store-uri sqlite:///mlflow.db --port 5000
 ```
 
-La API recupera los modelos registrados desde MLflow Model Registry mediante los alias champion.
+La API recupera los modelos registrados desde MLflow Model Registry mediante el alias `champion`.
+
+Durante las pruebas de despliegue se verificó la carga correcta de:
+
+- `mibici-equipo08-p1-demanda@champion`
+- `mibici-equipo08-p2-riesgo@champion`
 
 ### Construcción de la imagen
 
@@ -538,7 +545,42 @@ http://127.0.0.1:8000/docs
 
 Y se ejecutaron exitosamente los endpoints, obteniendo respuestas HTTP 200 desde el contenedor:
 
+### Verificación de endpoints de P1 y P2
+
+Comando de ejemplo P1:
+
+```bash
+curl -X POST \
+"http://127.0.0.1:8000/predict/p1" \
+-H "Content-Type: application/json" \
+-d '{
+  "origen_id": 10,
+  "hora": 8,
+  "dia_semana": 1,
+  "es_fin_semana": 0
+}'
+```
+
+Comando de ejemplo P2:
+
+```bash
+curl -X POST \
+"http://127.0.0.1:8000/predict/p2" \
+-H "Content-Type: application/json" \
+-d '{
+  "estacion_id": 10,
+  "hora": 8,
+  "entradas": 15,
+  "salidas": 12,
+  "balance_neto": 3,
+  "balance_acumulado": 25
+}'
+```
+Ejecución y respuesta de P1 desde Swagger:
+
 ![Swagger_Docker_P1](reports/figures/swagger_execute_from_docker_p1.png)
+
+Ejecución y respuesta de P2 desde Swagger:
 
 ![Swagger_Docker_P2](reports/figures/swagger_execute_from_docker_p2.png)
 
