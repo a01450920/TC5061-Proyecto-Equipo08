@@ -468,7 +468,7 @@ pruebas. Con scikit-learn 1.8 o superior podría fallar y habría que actualizar
 ![DeepChecks](reports/figures/deepchecks_execution.png)
 
 
-# Cambios 04NOV26, Empaquetar modelo del proyecto como API REST en contenedor Podman-Parte1
+## Cambios 04NOV26, Empaquetar modelo del proyecto como API REST en contenedor Podman-Parte1
 
 Se completó la servitización e integración de los modelos de P1 (predicción de demanda) y P2 (riesgo de desbalance) mediante FastAPI y MLflow Model Registry, validando el comportamiento del servicio REST de manera local.
 
@@ -486,59 +486,3 @@ Se completó la servitización e integración de los modelos de P1 (predicción 
     - `POST /predict/p1`: predicción de demanda de viajes para una estación.
     - `POST /predict/p2`: predicción de riesgo de desbalance.
 **Pruebas y verificación local:** ejecución de la canalización de entrenamiento local (`-e train`), registro de modelos (`-e register`) y pruebas de los endpoints `/predict/p1` y `/predict/p2` en Swagger UI (`http://127.0.0.1:8000/docs`), confirmando respuestas exitosas `200 OK` con inferencias en tiempo real desde los modelos Champion registrados en MLflow.
-
-## Despliegue con Docker
-
-### Prerrequisito: servidor de MLflow
-
-Antes de iniciar la API, debe existir un servidor de tracking de MLflow accesible desde el equipo host.
-
-```bash
-mlflow server --backend-store-uri sqlite:///mlflow.db --port 5000
-```
-
-La API recupera los modelos registrados desde MLflow Model Registry mediante los alias champion.
-
-### Construcción de la imagen
-
-La imagen fue construida exitosamente mediante Docker.
-
-```shell
-docker build -t mibici-service:latest .
-```
-#### Evidencia de ejecución de construcción de la imagen
-
-![DockerBuild](reports/figures/docker_build.png)
-
-### Ejecución del contenedor
-
-Posteriormente se ejecutó el contenedor:
-
-```shell
-docker run \
--p 8000:8000 \
--e MLFLOW_TRACKING_URI=http://host.docker.internal:5000 \
---name mibici-app \
-mibici-service:latest
-```
-#### Evidencia de ejecución del contenedor
-
-![DockerRun](reports/figures/docker_run.png)
-
-## Swagger
-
-Se validó el acceso a Swagger UI mediante:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-![Swagger](reports/figures/swagger.png)
-
-
-Y se ejecutaron exitosamente los endpoints, obteniendo respuestas HTTP 200 desde el contenedor:
-
-![Swagger_Docker_P1](reports/figures/swagger_execute_from_docker_p1.png)
-
-![Swagger_Docker_P2](reports/figures/swagger_execute_from_docker_p2.png)
-
