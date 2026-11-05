@@ -459,7 +459,6 @@ evidencia versionada:
 - [Test Drift](reports/testing/deepchecks_train_test_drift.html)
 
 
-
 **Limitación conocida:** DeepChecks 0.19.1 usa `pkg_resources` (de ahí `setuptools==69.5.1`) y
 requiere parches de compatibilidad con NumPy 2 y scikit-learn, que están en el propio archivo de
 pruebas. Con scikit-learn 1.8 o superior podría fallar y habría que actualizar DeepChecks.
@@ -467,3 +466,15 @@ pruebas. Con scikit-learn 1.8 o superior podría fallar y habría que actualizar
 ### Evidencia de ejecución de DeepChecks
 
 ![DeepChecks](reports/figures/deepchecks_execution.png)
+
+
+## Cambios 04NOV26, Empaquetar modelo del proyecto como API REST en contenedor Podman-Parte1
+
+Se completó la servitización e integración del modelo predictor de demanda para la pregunta P1 mediante FastAPI y MLflow Model Registry, validando el comportamiento del servicio REST de manera local.
+
+### Resumen del trabajo de esta actualización:
+* **Estructura de la API REST:** se creó el módulo `mibici/api/` conteniendo `app.py` (servidor FastAPI) y `schemas.py` (modelos de datos Pydantic).
+* **Validación de entradas:** implementación del esquema `PredictRequestP1` con validaciones de tipos para las variables `origen_id`, `hora`, `dia_semana` y `es_fin_semana`.
+* **Carga dinámica del modelo:** integración con MLflow Model Registry para consumir el modelo etiquetado con el alias `@champion` (`models:/mibici-equipo08-p1-demanda@champion`).
+* **Casting y compatibilidad de tipos:** ajuste explícito en la conversión de los datos de entrada a `float64` (`double`) para cumplir con la firma inferida por MLflow.
+* **Pruebas y verificación local:** ejecución de la canalización de entrenamiento local (`-e train`), registro del modelo ganador (`-e register`) y prueba del endpoint `/predict/p1` en Swagger UI (`http://127.0.0.1:8000/docs`), confirmando respuestas exitosas `200 OK` con predicciones en tiempo real.
