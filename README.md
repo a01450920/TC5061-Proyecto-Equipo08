@@ -489,98 +489,127 @@ Se completó la servitización e integración de los modelos de P1 (predicción 
 * **Pruebas y verificación local:** ejecución de la canalización de entrenamiento local (`-e train`), registro de modelos (`-e register`) y pruebas de los endpoints `/predict/p1` y `/predict/p2` en Swagger UI (`http://127.0.0.1:8000/docs`), confirmando respuestas exitosas `200 OK` con inferencias en tiempo real desde los modelos Champion registrados en MLflow.
 * **Contenerización:** creación de un Dockerfile para empaquetar la API FastAPI y sus dependencias de inferencia.
 
+
 ## Despliegue con Docker
 
-### Prerrequisito: servidor de MLflow
+### Arquitectura de despliegue
 
-Antes de iniciar la API, debe existir un servidor de tracking de MLflow accesible desde el equipo host.
+La solución utiliza Docker para empaquetar y ejecutar la API REST desarrollada con FastAPI, junto con las dependencias necesarias para realizar inferencias.
 
-```bash
-mlflow server --backend-store-uri sqlite:///mlflow.db --port 5000
-```
+La imagen incluye:
 
-La API recupera los modelos registrados desde MLflow Model Registry mediante el alias `champion`.
+- Código fuente de la API (`mibici/api/`).
+- Dependencias de ejecución definidas en `requirements.txt`.
+- Base de datos de MLflow (`mlflow.db`), que contiene los metadatos del Model Registry.
+- Artefactos de los modelos registrados (`mlruns/`).
 
-Durante las pruebas de despliegue se verificó la carga correcta de:
+Durante el inicio de la aplicación, FastAPI recupera los modelos P1 y P2 mediante sus respectivos aliases `champion` desde MLflow Model Registry.
 
-- `mibici-equipo08-p1-demanda@champion`
-- `mibici-equipo08-p2-riesgo@champion`
+**No se requiere iniciar un servidor MLflow externo**, ya que la API utiliza la base de datos SQLite y los artefactos incluidos en la imagen Docker.
 
 ### Construcción de la imagen
 
-La imagen fue construida exitosamente mediante Docker.
+La imagen Docker fue construida exitosamente mediante el siguiente comando:
 
-```shell
-docker build -t mibici-service:latest .
+```bash
+docker build -t mibici-api:1.2 .
 ```
-#### Evidencia de ejecución de construcción de la imagen
+
+#### Evidencia de construcción de la imagen
 
 ![DockerBuild](reports/figures/docker_build.png)
 
 ### Ejecución del contenedor
 
-Posteriormente se ejecutó el contenedor:
+Una vez construida la imagen, se ejecuta el contenedor mediante:
 
-```shell
-docker run \
--p 8000:8000 \
--e MLFLOW_TRACKING_URI=http://host.docker.internal:5000 \
---name mibici-app \
-mibici-service:latest
+```bash
+docker run --rm -d \
+  --name mibici-api \
+  -p 8000:8000 \
+  mibici-api:1.2
 ```
+
 #### Evidencia de ejecución del contenedor
 
 ![DockerRun](reports/figures/docker_run.png)
 
-## Swagger
+### Verificar el contenedor
 
-Se validó el acceso a Swagger UI mediante:
+Para comprobar que el contenedor está ejecutándose correctamente:
 
-```text
-http://127.0.0.1:8000/docs
+```bash
+docker ps --filter name=mibici-api
 ```
+
+Para consultar los registros de ejecución de la API:
+
+```bash
+docker logs mibici-api
+```
+
+### Documentación interactiva de la API (Swagger)
+
+Una vez que el contenedor esté ejecutándose, se puede acceder a Swagger UI desde el navegador:
+
+http://localhost:8000/docs
+
+Desde esta interfaz es posible consultar los endpoints disponibles y probar las solicitudes de predicción de los modelos P1 y P2.
 
 ![Swagger](reports/figures/swagger.png)
 
-
-Y se ejecutaron exitosamente los endpoints, obteniendo respuestas HTTP 200 desde el contenedor:
-
 ### Verificación de endpoints de P1 y P2
 
-Comando de ejemplo P1:
+Se realizaron pruebas de los endpoints de predicción mediante solicitudes HTTP.
+
+**Comando de ejemplo P1 – Predicción de demanda:**
 
 ```bash
 curl -X POST \
-"http://127.0.0.1:8000/predict/p1" \
--H "Content-Type: application/json" \
--d '{
-  "origen_id": 10,
-  "hora": 8,
-  "dia_semana": 1,
-  "es_fin_semana": 0
-}'
+  http://localhost:8000/predict/p1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "origen_id": 10,
+    "hora": 8,
+    "dia_semana": 1,
+    "es_fin_semana": 0
+  }'
 ```
 
-Comando de ejemplo P2:
+**Comando de ejemplo P2 – Predicción de riesgo de desbalance:**
 
 ```bash
 curl -X POST \
-"http://127.0.0.1:8000/predict/p2" \
--H "Content-Type: application/json" \
--d '{
-  "estacion_id": 10,
-  "hora": 8,
-  "entradas": 15,
-  "salidas": 12,
-  "balance_neto": 3,
-  "balance_acumulado": 25
-}'
+  http://localhost:8000/predict/p2 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "estacion_id": 10,
+    "hora": 8,
+    "entradas": 15,
+    "salidas": 12,
+    "balance_neto": 3,
+    "balance_acumulado": 25
+  }'
 ```
-Ejecución y respuesta de P1 desde Swagger:
+
+Ambos endpoints fueron invocados exitosamente y los registros del contenedor confirmaron respuestas HTTP 200 OK.
+
+**Ejecución y respuesta de P1 desde Swagger:**
 
 ![Swagger_Docker_P1](reports/figures/swagger_execute_from_docker_p1.png)
 
-Ejecución y respuesta de P2 desde Swagger:
+**Ejecución y respuesta de P2 desde Swagger:**
 
 ![Swagger_Docker_P2](reports/figures/swagger_execute_from_docker_p2.png)
 
+### Detener el contenedor
+
+Para detener la API:
+
+```bash
+docker stop mibici-api
+```
+
+Como el contenedor se inició con la opción `--rm`, Docker lo eliminará automáticamente después de detenerlo.
+
+---
