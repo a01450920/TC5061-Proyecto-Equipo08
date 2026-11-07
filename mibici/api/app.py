@@ -12,7 +12,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-tracking_uri = os.getenv("MLFLOW_TRACKING_URI", MLFLOW_TRACKING_URI)
+#Reemplazar
+#tracking_uri = os.getenv("MLFLOW_TRACKING_URI", MLFLOW_TRACKING_URI)
+#mlflow.set_tracking_uri(tracking_uri)
+
+#Por esto:
+db_path = os.path.abspath("mlflow.db")
+default_sqlite_uri = f"sqlite:///{db_path}"
+tracking_uri = os.getenv("MLFLOW_TRACKING_URI", default_sqlite_uri)
 mlflow.set_tracking_uri(tracking_uri)
 
 P1_MODEL_ALIAS_URI = "models:/mibici-equipo08-p1-demanda@champion"

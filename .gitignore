@@ -238,3 +238,6 @@ mlflow.db
 credentials.json
 secrets.yaml
 reports/testing/generated/
+
+# Respaldos locales de bases de datos
+*.backup
