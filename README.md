@@ -428,43 +428,40 @@ Reporte completo: [pip-audit Report](reports/security/pip_audit_report.txt)
 
 El archivo `mlflow.db` estuvo versionado en commits anteriores y después se retiró y se agregó al `.gitignore`. Contiene metadatos de corridas (sin credenciales). No se reescribió el historial para no afectar las ramas del equipo; el árbol actual del repositorio no lo contiene.
 
-## 9. Validación de datos con DeepChecks
-
-```powershell
-$env:DEEPCHECKS_GUARDAR_EVIDENCIA = "1"
-python -m pytest tests/test_data_validation.py -q
-Remove-Item Env:DEEPCHECKS_GUARDAR_EVIDENCIA
-```
-
-`tests/test_data_validation.py` valida la tabla de demanda de P1 (estación x fecha x hora), que no
-contiene datos personales. Usa `data/processed/viajes_clean.parquet` y, si no existe, viajes
-sintéticos con el mismo esquema. Entrenamiento (enero-abril) y prueba (mayo) se separan con las
-fechas de `mibici/config.py`, igual que en el modelado.
-
-| Tipo | Qué revisa | Resultado |
-|---|---|---|
-| Reglas de calidad (pandas) | Valores faltantes, filas duplicadas en la llave (estación, fecha, hora), tipos numéricos, rangos (hora 0-23, día 0-6, conteo >= 1) y separación temporal entre entrenamiento y prueba | **La prueba falla** si no se cumplen |
-| DeepChecks `data_integrity` | Reporte de integridad del entrenamiento | Se genera el HTML y se avisa si hay condiciones no superadas |
-| DeepChecks `train_test_validation` | Drift entre entrenamiento y prueba | Se genera el HTML y se avisa si hay condiciones no superadas |
-
-Los hallazgos de DeepChecks **se reportan sin hacer fallar la prueba**: sus condiciones por defecto
-(por ejemplo, 0 % de duplicados) no aplican a esta tabla, porque al quitar la fecha las combinaciones
-de variables se repiten entre días por construcción, y entre enero-abril y mayo es esperable un drift
-estacional. Las reglas que sí son errores de calidad se verifican de forma explícita.
-
-Los reportes se guardan en `reports/testing/generated/` (ignorada por Git). Para actualizar la
-evidencia versionada:
-- [Data Integrity](reports/testing/deepchecks_data_integrity.html)
-- [Test Drift](reports/testing/deepchecks_train_test_drift.html)
 
 
-**Limitación conocida:** DeepChecks 0.19.1 usa `pkg_resources` (de ahí `setuptools==69.5.1`) y
-requiere parches de compatibilidad con NumPy 2 y scikit-learn, que están en el propio archivo de
-pruebas. Con scikit-learn 1.8 o superior podría fallar y habría que actualizar DeepChecks.
+## 9. Validación de datos con DeepChecks (actualizado y corregido el 08NOV26)
 
-### Evidencia de ejecución de DeepChecks
+Las suites de validación de calidad de datos (`data_integrity`) y de cambio de distribución (`train_test_validation`) de DeepChecks se ejecutan de manera automatizada sobre las tablas de características de las tres preguntas del proyecto ($P1$, $P2$ y $P3$).
+
+### Bitácora de Chequeos, Evaluaciones y Decisiones de Equipo
+
+Con base en la evaluación de los reportes generados por DeepChecks para $P1$, $P2$ y $P3$, se documentan los chequeos con condiciones no superadas por defecto, sus valores y comportamientos observados, y la decisión técnica/operativa asumida por el equipo:
+
+| Pregunta | Suite | Chequeo Evaluado | Valor / Alerta Observada | Decisión y Justificación del Equipo |
+|---|---|---|---|---|
+| **P1** (Demanda) | Data Integrity | *Data Duplicates* | 14.79% de combinaciones duplicadas | **Riesgo Aceptado.** Al agrupar por estación, hora y día de la semana, las combinaciones se repiten por construcción entre semanas. No son registros duplicados anómalos. |
+| **P1** (Demanda) | Train-Test Drift | *New Category Train Test* | Nuevas categorías en `origen_id` (408-416) en Mayo | **Riesgo Aceptado.** Representa la expansión del sistema MiBici con nuevas estaciones en el periodo de prueba. Los modelos basados en árboles manejan categorías no vistas mediante valores por defecto. |
+| **P2** (Riesgo) | Data Integrity | *Data Duplicates* | 5.49% de combinaciones duplicadas | **Riesgo Aceptado.** Estructura repetitiva esperada al consolidar indicadores por estación y hora. |
+| **P2** (Riesgo) | Train-Test Drift | *New Category Train Test* | Nuevas categorías en `estacion_id` (408-417) en Mayo | **Balanceo y Robustez.** Se mantienen las estrategias de balanceo de clase (`class_weight='balanced'`) para garantizar generalización ante la incorporación de nuevas estaciones. |
+| **P3** (Clustering) | Data Integrity | *Outliers / Integrity* | 0 chequeos fallidos | **Integridad Completa.** La matriz de perfiles horarios no presentó anomalías de formato o valores nulos. |
+| **P3** (Clustering) | Train-Test Drift | *Feature Drift* | Drift score en proporciones por hora (`pct_hora_*`) | **Aceptado.** Muestra el cambio en la dinámica de movilidad urbana entre Enero-Abril y Mayo por factores climáticos. Los patrones de agrupamiento ($k=2$ a $k=6$) absorben este drift. |
+
+### Generación de Reportes Evidenciales
+
+Para ejecutar las suites en las tres preguntas, visualizar las alertas detalladas en consola y actualizar los reportes HTML en `reports/testing/generated/`, correr:
+
+python -m pytest tests/test_data_validation.py -v -W ignore::DeprecationWarning
 
 ![DeepChecks](reports/figures/deepchecks_execution.png)
+
+Evidencias generadas para la corrección 08NOV26:
+1. `deepchecks_data_integrity_p1.html`
+2. `deepchecks_data_integrity_p2.html`
+3. `deepchecks_data_integrity_p3.html`
+4. `deepchecks_train_test_drift_p1.html`
+5. `deepchecks_train_test_drift_p2.html`
+6. `deepchecks_train_test_drift_p3.html`
 
 
 # Cambios 04NOV26, API REST y despliegue en contenedor Docker
