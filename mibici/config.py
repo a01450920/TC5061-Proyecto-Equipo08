@@ -29,3 +29,9 @@ VAL_START_DATE = "2026-04-01"
 #   mlflow server --backend-store-uri sqlite:///mlflow.db --port 5000
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 MLFLOW_EXPERIMENT_NAME = os.getenv("MLFLOW_EXPERIMENT_NAME", "mibici-equipo08")
+
+# Períodos para monitoreo de drift
+DRIFT_REFERENCE_START_DATE = "2026-01-01"
+DRIFT_REFERENCE_END_DATE = "2026-04-30"
+DRIFT_CURRENT_START_DATE = "2026-06-01"
+DRIFT_CURRENT_END_DATE = "2026-06-30"

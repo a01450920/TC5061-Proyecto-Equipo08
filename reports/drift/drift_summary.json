@@ -1,0 +1,19 @@
+{
+    "reference_period": {
+        "start": "2026-01-01",
+        "end": "2026-04-30",
+        "rows": 485502
+    },
+    "current_period": {
+        "start": "2026-06-01",
+        "end": "2026-06-30",
+        "rows": 123248
+    },
+    "columns": [
+        "origen_id",
+        "hora",
+        "dia_semana",
+        "es_fin_semana",
+        "viajes_salientes"
+    ]
+}
