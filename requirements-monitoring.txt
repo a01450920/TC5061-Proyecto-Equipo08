@@ -1,0 +1,4 @@
+numpy==1.26.4
+pandas==2.2.3
+pyarrow==21.0.0
+evidently==0.7.23

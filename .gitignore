@@ -241,3 +241,5 @@ reports/testing/generated/
 
 # Respaldos locales de bases de datos
 *.backup
+
+.venv-evidently/

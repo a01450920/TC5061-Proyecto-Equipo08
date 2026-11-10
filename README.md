@@ -610,3 +610,134 @@ docker stop mibici-api
 Como el contenedor se inició con la opción `--rm`, Docker lo eliminará automáticamente después de detenerlo.
 
 ---
+
+## Monitoreo de drift con Evidently
+
+El monitoreo de drift se implementó para el modelo P1 de predicción de demanda. El análisis compara la distribución de los datos utilizados durante el entrenamiento con un periodo posterior:
+
+- **Conjunto de referencia:** enero a abril de 2026.
+- **Conjunto actual:** junio de 2026.
+
+Junio se utiliza como periodo actual porque es el primer mes disponible posterior al entrenamiento y al conjunto de prueba original de mayo.
+
+Las variables evaluadas son:
+
+- `origen_id`
+- `hora`
+- `dia_semana`
+- `es_fin_semana`
+- `viajes_salientes`
+
+`origen_id`, `dia_semana` y `es_fin_semana` se definen como variables categóricas. `hora` y `viajes_salientes` se definen como variables numéricas.
+
+### Preparación de los datos
+
+El reporte utiliza `data/processed/viajes_clean.parquet`. Para descargar los archivos disponibles de enero a junio y regenerar el Parquet, se debe ejecutar la ingesta desde el entorno principal del proyecto:
+
+```bash
+mlflow run . -e ingest \
+  --experiment-name mibici-equipo08 \
+  --env-manager=local
+```
+
+Los periodos de referencia y actual se configuran en `mibici/config.py`.
+
+### Entorno de monitoreo
+
+Evidently se ejecuta en un entorno independiente con Python 3.12 para mantener compatibilidad con sus dependencias y no modificar el entorno principal de MLflow.
+
+#### Linux, macOS o WSL
+
+Instalar `uv`:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc
+uv --version
+```
+
+Crear el entorno e instalar las dependencias:
+
+```bash
+uv python install 3.12
+uv venv .venv-evidently --python 3.12
+source .venv-evidently/bin/activate
+uv pip install -r requirements-monitoring.txt
+```
+
+#### Windows PowerShell
+
+Instalar `uv`:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Cierra y abre nuevamente PowerShell. Después verifica la instalación:
+
+```powershell
+uv --version
+```
+
+Crear el entorno e instalar las dependencias:
+
+```powershell
+uv python install 3.12
+uv venv .venv-evidently --python 3.12
+.\.venv-evidently\Scripts\Activate.ps1
+uv pip install -r requirements-monitoring.txt
+```
+
+Si PowerShell bloquea la activación del entorno, habilita la ejecución sólo para la sesión actual:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv-evidently\Scripts\Activate.ps1
+```
+
+En ejecuciones posteriores sólo es necesario entrar a la raíz del repositorio y activar el entorno:
+
+```bash
+# Linux, macOS o WSL
+source .venv-evidently/bin/activate
+```
+
+```powershell
+# Windows PowerShell
+.\.venv-evidently\Scripts\Activate.ps1
+```
+
+### Generación del reporte
+
+Desde la raíz del repositorio:
+
+```bash
+python -m mibici.monitoring.drift_report
+```
+
+El proceso construye la tabla agregada de P1 mediante `preparar_features_p1_demanda()`. Cada registro representa una combinación de estación, fecha y hora.
+
+Los resultados se guardan en:
+
+[reports/drift/evidently_report.html](reports/drift/evidently_report.html)
+
+[reports/drift/drift_summary.json](reports/drift/drift_summary.json)
+
+
+
+- `evidently_report.html` contiene el reporte interactivo con las distribuciones y pruebas de drift por variable.
+- `drift_summary.json` contiene los periodos analizados, el tamaño de los conjuntos y las variables evaluadas.
+
+Para abrir el reporte desde WSL:
+
+```bash
+explorer.exe "$(wslpath -w reports/drift/evidently_report.html)"
+```
+
+### Resultado obtenido
+
+El análisis detectó drift en `origen_id`, lo que indica un cambio en la distribución de los registros entre estaciones durante junio. Las otras cuatro variables no presentaron drift.
+
+En total, una de las cinco variables evaluadas presentó drift, equivalente al 20%. Esta proporción es inferior al umbral de 50% utilizado por Evidently para declarar drift general del conjunto.
+
+La interpretación completa, las gráficas y la recomendación sobre reentrenamiento se incluyen en el reporte PDF del entregable.

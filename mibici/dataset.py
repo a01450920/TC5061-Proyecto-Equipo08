@@ -17,13 +17,14 @@ URLS_MIBICI_2026 = [
     "https://mibici.net/site/assets/files/123236/datos_abiertos_2026_03.csv",
     "https://mibici.net/site/assets/files/124927/datos_abiertos_2026_04.csv",
     "https://mibici.net/site/assets/files/125943/datos_abiertos_2026_05.csv",
+    "https://mibici.net/site/assets/files/127734/datos_abiertos_2026_06.csv"
 ]
 
 
 def descargar_datos_mibici():
     """
     Descarga automáticamente los datasets abiertos de MiBici
-    de enero a mayo de 2026 en data/raw.
+    que se indican en URLS_MIBICI_2026, en data/raw.
     """
     RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
