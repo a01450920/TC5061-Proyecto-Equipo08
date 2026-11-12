@@ -762,6 +762,9 @@ Este paso entrena la versión alternativa utilizando los datos acumulados y la r
   python -m mibici.modeling.retrain_v2
 
 Una vez registrado el modelo candidato (@challenger), ejecuta la evaluación comparativa frente al modelo en producción (@champion) sobre la ventana de evaluación de Junio 2026
-##
+
+```bash
 $env:MLFLOW_HTTP_REQUEST_TIMEOUT = "300"
 mlflow run . -e ab_test --experiment-name "mibici-equipo08-p1-demanda" --env-manager=local
+```
+##
