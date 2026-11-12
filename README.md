@@ -741,3 +741,27 @@ El análisis detectó drift en `origen_id`, lo que indica un cambio en la distri
 En total, una de las cinco variables evaluadas presentó drift, equivalente al 20%. Esta proporción es inferior al umbral de 50% utilizado por Evidently para declarar drift general del conjunto.
 
 La interpretación completa, las gráficas y la recomendación sobre reentrenamiento se incluyen en el reporte PDF del entregable.
+
+##Actualización 11NOV26
+##Arquitectura de reentrenamiento y A/B Testing (Paso 4 & A/B Test)
+
+
+* **Reentrenamiento Alternativo (`mibici/modeling/retrain_v2.py`):**
+  * Script diseñado para incorporar datos acumulados (periodo de Enero a Mayo de 2026, abarcando más de 600,000 registros).
+  * Registra automáticamente la nueva versión candidata en el *MLflow Model Registry* bajo el alias `@challenger`.
+
+* **Pruebas A/B y Evaluación de Modelos (`mibici/modeling/ab_test.py`):**
+  * Script encargado de comparar de forma automatizada el modelo en producción (`@champion`) frente al modelo candidato (`@challenger`).
+  * Realiza la evaluación comparativa utilizando la ventana de datos de Junio de 2026 (más de 123,000 registros de prueba), calculando métricas de rendimiento críticas como el Error Absoluto Medio (MAE) y la Raíz del Error Cuadrático Medio (RMSE) para respaldar la toma de decisiones.
+
+  Para ejecutar el flujo de reentrenamiento, registro y pruebas A/B del modelo de demanda, asegúrate de tener tu entorno virtual activo y utiliza los siguientes comandos desde la terminal:
+
+### 1. Reentrenamiento y Registro del Modelo (`retrain_v2`)
+Este paso entrena la versión alternativa utilizando los datos acumulados y la registra automáticamente en el *MLflow Model Registry* bajo el alias `@challenger`:
+
+  python -m mibici.modeling.retrain_v2
+
+Una vez registrado el modelo candidato (@challenger), ejecuta la evaluación comparativa frente al modelo en producción (@champion) sobre la ventana de evaluación de Junio 2026
+##
+$env:MLFLOW_HTTP_REQUEST_TIMEOUT = "300"
+mlflow run . -e ab_test --experiment-name "mibici-equipo08-p1-demanda" --env-manager=local
