@@ -65,8 +65,8 @@ def ejecutar_reentrenamiento_v2():
     with run_context:
         # Entrenar RandomForest
         modelo_v2 = RandomForestRegressor(
-            n_estimators=300, max_depth=None, min_samples_split=2, min_samples_leaf=2,
-            random_state=RANDOM_SEED, n_jobs=-1
+            n_estimators=50, max_depth=15, min_samples_split=2, min_samples_leaf=2,
+            random_state=RANDOM_SEED, n_jobs=2
         )
         modelo_v2.fit(X_train, y_train)
 
@@ -86,7 +86,8 @@ def ejecutar_reentrenamiento_v2():
             "run_role": "challenger",
         })
         mlflow.log_params({
-            "n_estimators": 300,
+            "n_estimators": 50,
+            "max_depth": 15,
             "train_period": "2026-01-01_to_2026-05-31",
             "eval_period": "2026-06-01_to_2026-06-30",
             "reason": "Reentrenamiento acumulado incluyendo mayo"
