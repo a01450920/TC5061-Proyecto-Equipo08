@@ -1,0 +1,27 @@
+{
+    "evaluation_period": "2026-06-01 a 2026-06-30",
+    "sample_size": 123248,
+    "champion": {
+        "version": 3,
+        "mae": 1.2174994170658875,
+        "rmse": 1.9613136865257477,
+        "r2": 0.5144745375560529
+    },
+    "challenger": {
+        "version": 4,
+        "mae": 1.2196188352586403,
+        "rmse": 1.9575832442013748,
+        "r2": 0.5163197316842851
+    },
+    "mae_delta_champion_minus_challenger": -0.0021194181927529565,
+    "mae_ic95": [
+        -0.005693358392908023,
+        0.0017220164656035469
+    ],
+    "mse_delta_champion_minus_challenger": 0.01461921897523978,
+    "mse_ic95": [
+        -0.012692297210801966,
+        0.048442188212502416
+    ],
+    "winner": "sin diferencia significativa (se mantiene champion)"
+}
