@@ -768,3 +768,20 @@ $env:MLFLOW_HTTP_REQUEST_TIMEOUT = "300"
 mlflow run . -e ab_test --experiment-name "mibici-equipo08-p1-demanda" --env-manager=local
 ```
 ##
+
+## Levantar el sistema con Docker Compose
+
+```bash
+docker compose up -d --build   # MLflow (:5000) + API (:8000)
+docker compose ps
+```
+
+- MLflow UI: http://127.0.0.1:5000
+- Swagger de la API: http://127.0.0.1:8000/docs
+
+El volumen `mlflow-data` conserva experimentos y modelos entre reinicios.
+La API carga los modelos con alias `champion` al arrancar. Si todavía no
+hay modelos registrados, avisa en los logs y hay que reiniciarla
+(`docker compose restart api`) después de registrarlos.
+
+Detener: `docker compose down` (conserva datos) o `docker compose down -v` (borra el volumen).
