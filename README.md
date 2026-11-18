@@ -780,8 +780,30 @@ docker compose ps
 - Swagger de la API: http://127.0.0.1:8000/docs
 
 El volumen `mlflow-data` conserva experimentos y modelos entre reinicios.
-La API carga los modelos con alias `champion` al arrancar. Si todavía no
-hay modelos registrados, avisa en los logs y hay que reiniciarla
-(`docker compose restart api`) después de registrarlos.
+
+La primera vez que se levanta el sistema, la instancia de MLflow inicia vacía. Es necesario registrar los modelos siguiendo la sección **"Model Registry y ciclo de vida"** para que existan las versiones con alias `champion` utilizadas por la API.
+
+La API carga los modelos con alias champion al arrancar. Si los modelos aún no están registrados, aparecerán advertencias en los logs y será necesario reiniciar la API después de registrarlos:
+
+```bash
+docker compose restart api
+```
 
 Detener: `docker compose down` (conserva datos) o `docker compose down -v` (borra el volumen).
+
+## Integración continua (GitHub Actions)
+
+El repositorio incluye un workflow de GitHub Actions ubicado en:
+
+```text
+.github/workflows/ci.yml
+```
+
+El pipeline se ejecuta automáticamente en cada `push` y `pull request` y realiza las siguientes validaciones:
+
+1. Instalación de dependencias desde `requirements-dev.txt`.
+2. Ejecución de la suite de pruebas con PyTest.
+3. Validación de la configuración de Docker Compose.
+4. Construcción de la imagen Docker de la API.
+
+La ejecución exitosa del workflow puede consultarse en la pestaña **Actions** del repositorio de GitHub.
