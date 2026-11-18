@@ -15,8 +15,6 @@ COPY mibici ./mibici
 COPY pyproject.toml .
 COPY MLproject .
 COPY .env.example .
-COPY mlflow.db ./mlflow.db
-COPY mlruns ./mlruns
 
 EXPOSE 8000
 

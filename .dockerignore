@@ -1,11 +1,33 @@
+# Control de versiones y CI
 .git/
+.github/
+
+# Entornos virtuales
 .venv/
 venv/
+mi_entorno/
+
+# Caches de Python y herramientas
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
 .ipynb_checkpoints/
+
+# Secretos y respaldos locales
 .env
-# Respaldos locales
 *.backup
+
+# Datos y artefactos de MLflow (la API los obtiene del servidor MLflow)
+data/
+mlruns/
+mlartifacts/
+mlflow.db
+
+# No se usan dentro de la imagen
+notebooks/
+reports/
+references/
+docs/
+tests/
+models/
