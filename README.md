@@ -807,3 +807,28 @@ El pipeline se ejecuta automáticamente en cada `push` y `pull request` y realiz
 4. Construcción de la imagen Docker de la API.
 
 La ejecución exitosa del workflow puede consultarse en la pestaña **Actions** del repositorio de GitHub.
+
+## Pruebas de carga y desempeño con Locust
+
+Se diseñó y ejecutó un escenario de pruebas de carga con **Locust** (`tests/load/locustfile.py`) para evaluar el rendimiento, estabilidad y latencia de la API REST desplegada mediante Docker Compose (`POST /predict/p1` y `POST /predict/p2`) bajo concurrencia[cite: 5, 11, 14].
+
+### Configuración del escenario
+- **Herramienta:** Locust (ejecución en modo *headless*).
+- **Usuarios concurrentes:** 30 usuarios virtuales[cite: 19].
+- **Tasa de incremento (*spawn rate*):** 5 usuarios/segundo[cite: 19].
+- **Duración de la prueba:** [1 o 2] minutos.
+- **Distribución de carga:** 60% de peticiones hacia `/predict/p1` (predicción de demanda) y 40% hacia `/predict/p2` (riesgo de desbalance), con pausas aleatorias de 0.5 a 2.0 s entre solicitudes.
+
+### Ejecución
+
+Con los servicios `mlflow` (`:5000`) y `api` (`:8000`) levantados mediante Docker Compose y los modelos con alias `@champion` cargados[cite: 5, 11]:
+
+```powershell
+locust -f tests/load/locustfile.py `
+  --host [http://127.0.0.1:8000](http://127.0.0.1:8000) `
+  --users 30 `
+  --spawn-rate 5 `
+  --run-time 2m `
+  --headless `
+  --html reports/load/locust_report.html `
+  --csv reports/load/locust_stats
