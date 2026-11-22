@@ -1,10 +1,11 @@
+# Escenario de prueba de carga con Locust para la API de MiBici (pesos 3:2 entre P1 y P2).
 import random
 from locust import HttpUser, task, between
 
 
 class MiBiciPredictionUser(HttpUser):
     wait_time = between(0.5, 2.0)
-
+    #Tarea de predicción de demanda (peso 3); evalúa respuesta HTTP 200 en POST /predict/p1.
     @task(3)
     def predict_demand_p1(self):
         payload = {
@@ -23,7 +24,7 @@ class MiBiciPredictionUser(HttpUser):
                 resp.success()
             else:
                 resp.failure(f"P1 fallo ({resp.status_code}): {resp.text}")
-
+    # Tarea de riesgo de desbalance (peso 2); calcula balance_neto en POST /predict/p2.
     @task(2)
     def predict_imbalance_p2(self):
         entradas = round(random.uniform(0.0, 25.0), 1)
